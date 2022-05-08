@@ -44,15 +44,33 @@ struct [[eosio::table("global"), eosio::contract("apollo.token")]] global_t {
     name admin;                 // default is contract self
     name fee_collector;         // mgmt fees to collector
     uint64_t fee_rate = 4;      // boost by 10,000, i.e. 0.04%
+    uint16_t curr_cat1_id = 0;
+    uint16_t curr_cat2_id = 1;
+    uint32_t curr_cat3_id = 2;
     bool active = false;
 
-    EOSLIB_SERIALIZE( global_t, (admin)(fee_collector)(fee_rate)(active) )
+    EOSLIB_SERIALIZE( global_t, (admin)(fee_collector)(fee_rate)
+                                (curr_cat1_id)(curr_cat2_id)(curr_cat3_id)
+                                (active) )
 };
-
 typedef eosio::singleton< "global"_n, global_t > global_singleton;
 
+/**
+ * @brief NFT assets factory
+ * symbol-id:
+ * 
+ * |...........|...........|.......................|
+ * |Byte7 Byte6 Byte5 Byte4 Byte3 Byte2 Byte1 Byte0|
+ *  
+ */
+struct symbol_id {
+    uint16_t cat1_id;
+    uint16_t cat2_id;
+    uint32_t cat3_id;
+};
+
 struct token_asset {
-    uint64_t symbid;
+    symbol_id symbid;    
     int64_t  amount;
 
     token_asset& operator+=(const token_asset& value) { this->amount += value.amount; return *this; } 
@@ -110,7 +128,8 @@ struct hashrate_t {
 };
 
 struct pow_asset_meta {
-    string product_sn;                              //product serial no
+    string mining_pool;                             //e.g. 超算大陆
+    string pool_location;                           //e.g. 加拿大
     string manufacturer;                            //manufacture info
     string mine_coin_type;                          //btc, eth
     hashrate_t hashrate;                            //hash_rate and hash_rate_unit(M/T) E.g. 21.457 MH/s

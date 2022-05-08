@@ -1,0 +1,4 @@
+/Users/richardchen/work/apollo.contracts/build/CMakeFiles/evaluate_every_build.dir
+/Users/richardchen/work/apollo.contracts/build/CMakeFiles/contracts_project.dir
+/Users/richardchen/work/apollo.contracts/build/CMakeFiles/edit_cache.dir
+/Users/richardchen/work/apollo.contracts/build/CMakeFiles/rebuild_cache.dir
