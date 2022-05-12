@@ -32,11 +32,13 @@ static constexpr uint64_t max_memo_size     = 1024;
 // static constexpr uint64_t seconds_per_day       = 24 * 3600;
 // static constexpr uint64_t seconds_per_hour      = 3600;
 
-enum class asset_type_t : uint16_t {
+enum class token_type_t: uint8_t {
     NONE                        = 0,
     POW_ASSET                   = 1,
     POS_ASSET                   = 2,
 };
+
+#define HASH256(str) sha256(const_cast<char*>(str.c_str()), str.size());
 
 #define TBL struct [[eosio::table, eosio::contract("apollo.token")]]
 
@@ -44,137 +46,146 @@ struct [[eosio::table("global"), eosio::contract("apollo.token")]] global_t {
     name admin;                 // default is contract self
     name fee_collector;         // mgmt fees to collector
     uint64_t fee_rate = 4;      // boost by 10,000, i.e. 0.04%
-    uint16_t curr_cat1_id = 0;
-    uint16_t curr_cat2_id = 1;
-    uint32_t curr_cat3_id = 2;
+    uint16_t curr_nft_cat_id = 0;
+    uint16_t curr_nft_subcat_id = 1;
+    uint32_t curr_nft_item_id = 2;
     bool active = false;
 
     EOSLIB_SERIALIZE( global_t, (admin)(fee_collector)(fee_rate)
-                                (curr_cat1_id)(curr_cat2_id)(curr_cat3_id)
+                                (curr_nft_cat_id)(curr_nft_subcat_id)(curr_nft_item_id)
                                 (active) )
 };
 typedef eosio::singleton< "global"_n, global_t > global_singleton;
 
-/**
- * @brief NFT assets factory
- * symbol-id:
- * 
- * |...........|...........|.......................|
- * |Byte7 Byte6 Byte5 Byte4 Byte3 Byte2 Byte1 Byte0|
- *  
- */
-struct symbol_id {
-    uint16_t cat1_id;
-    uint16_t cat2_id;
-    uint32_t cat3_id;
+enum class nft_type: uint8_t {
+    NONE        = 0,
+    POW         = 1,
+    POS         = 2,
 };
 
+enum class mine_coin: uint8_t {
+    NONE        = 0,
+    BTC         = 1,
+    ETH         = 2,
+    AMAX        = 3,
+    FIL         = 4
+}
+
 struct token_asset {
-    symbol_id symbid;    
-    int64_t  amount;
+    uint64_t    asset_id;
+    int64_t     amount;
 
-    token_asset& operator+=(const token_asset& value) { this->amount += value.amount; return *this; } 
-    token_asset& operator-=(const token_asset& value) { this->amount -= value.amount; return *this; }
+    token_asset& operator+=(const token_asset& quantity) { 
+        check( quantity.symbol == this->symbol, "symbol mismatch");
+        this->amount += quantity.amount; return *this;
+    } 
+    token_asset& operator-=(const token_asset& value) { 
+        check( quantity.symbol == this->symbol, "symbol mismatch");
+        this->amount -= quantity.amount; return *this; 
+    }
+};
 
-    token_asset(){};
-    token_asset(const uint64_t& id): symbid(id) {};
-    token_asset(const uint64_t& id, const int64_t& q): symbid(id), amount(q){};
+struct hashrate {
+    float value;
+    char unit;  //M, G, T
 
-    EOSLIB_SERIALIZE(token_asset, (symbid)(amount) )
+    string to_string() { return to_string(value) + " " + string(unit); }
+};
+
+struct pow_asset_invariables {
+    string mining_pool;                             //E.g. 超算大陆
+    string manufacturer;                            //manufacture info
+    string mine_coin_type;                          //btc, eth
+    hashrate hash_rate;                             //hash_rate and hash_rate_unit(M/T) E.g. 21.457 MH/s
+    float power_in_watt;                            //E.g. 2100 Watt
+    uint16_t service_life_days;                     //service lifespan (E.g. 3*365) 
+
+    checksum256 hash(string prefix) {
+        string str =    prefix + "\n" + 
+                        mining_pool + "\n" +
+                        manufacturer + "\n" +
+                        mine_coin_type + "\n" +
+                        hash_rate.to_string() + "\n" +
+                        to_string(power_in_watt) + "\n" +
+                        to_string(service_life_days);
+
+        return HASH256(str);
+    }
+};
+
+struct power_asset_variables {
+    string mining_location;                         //E.g. 加拿大
+    asset daily_earning_est;                        //daily earning estimate: E.g. "0.00397002 AMETH"
+    asset daily_electricity_charge;                 //每日耗电, E.g.: "0.85 CNYD" for reference
+    uint16_t daily_svcfee_rate;                     //boost by 10000, 5% => 500
+    hashrate actual_hash_rate;                      //normalized hash rate
+    uint8_t onshelf_days;                           //0: T+0, 1:T+1
+};
+
+typedef std::variant<pow_asset_invariables /*pos_asset_invariables */> token_invars;
+typedef std::variant<power_asset_variables /*pos_asset_variables */> token_vars;
+
+TBL token_stats_t {
+    uint64_t        token_id;       //PK
+    uint8_t         token_type;     //POW, POS, ...etc
+    string          token_uri;      //token_uri for token metadata { image }
+    token_invars    invars;
+    token_vars      vars;
+    int64_t         max_supply;     //when amount is 1, it means NFT-721 type
+    int64_t         supply;
+    name            issuer;
+    time_point_sec  issued_at;
+    bool            paused;
+
+    token_stats_t() {};
+    token_stats_t(const uint64_t& id): token_id(id) {};
+
+    uint64_t primary_key()const { return token_id; }
+    uint8_t by_token_type()const { return token_type; }
+    checksum256 by_token_invars()const { return invars.hash(""); }
+    typedef eosio::multi_index
+    < "tokenstats"_n,  token_stats_t,
+        indexed_by<"tokentypes"_n, const_mem_fun<token_stats_t, uint8_t, &token_stats_t::by_token_type> >,
+        indexed_by<"tokeninvars"_n, const_mem_fun<token_stats_t, checksum256, &token_stats_t::by_token_invars> >
+    > idx_t;
+
+    EOSLIB_SERIALIZE(token_stats_t, (token_id)(token_type)(token_uri)(invars)(vars)(max_supply)(supply)
+                                    (issuer)(issued_at)(paused) )
+};
+
+TBL asset_t {
+    uint64_t        id;        //PK
+    uint64_t        token_id;
+    time_point_sec  effected_at; //起效日
+    asset           last_recd_earning;
+    asset           total_recd_earing;
+    asset           total_paid_electricity_fees;
+    uint64_t        total_settled_times;
+    time_point_sec  last_settled_at;
+
+    asset_t() {}
+    asset_t(const uint64_t& i): id(i) {}
+
+    uint64_t primary_key()const { return id; }
+
+    EOSLIB_SERIALIZE(asset_t,   (id)(token_id)(effected_at)(last_recd_earning)(total_recd_earing)
+                                (total_paid_electricity_fees)(total_settled_times)(last_settled_at) )
 };
 
 ///Scope: owner's account
 TBL account_t {
     token_asset     balance;
-    asset           last_recd_earning;
-    asset           total_recd_earing;
-    time_point      last_settled_at;
     bool paused     = false;   //if true, it can no longer be transferred
 
     account_t() {}
-    account_t(const uint64_t& symbid): balance(symbid) {}
+    account_t(const token_asset& asset): balance(asset) {}
 
-    uint64_t    primary_key()const { return balance.symbid; }
+    uint64_t    primary_key()const { return balance.asset_id; }
 
     typedef eosio::multi_index< "accounts"_n, account_t > idx_t;
 
-    EOSLIB_SERIALIZE(account_t, (balance)(last_recd_earning)(total_recd_earing)(last_settled_at)(paused) )
+    EOSLIB_SERIALIZE(account_t, (balance)(paused) )
 
 };
-
-TBL tokenstats_t {
-    uint64_t        symbid;         //PK
-    uint16_t        type;           // 0: POW assets, 1: POS assets, ...etc
-    string          uri;            // token_uri for token metadata { image }
-    int64_t         max_supply;     // when amount is 1, it means NFT-721 type
-    int64_t         supply;
-    name            issuer;
-    time_point_sec  created_at;
-    bool paused     = false;
-
-    tokenstats_t() {};
-    tokenstats_t(const uint64_t& id): symbid(id) {};
-
-    uint64_t primary_key()const { return symbid; }
-
-    typedef eosio::multi_index< "tokenstats"_n, tokenstats_t > idx_t;
-
-    EOSLIB_SERIALIZE(tokenstats_t, (symbid)(type)(uri)(max_supply)(supply)(issuer)(created_at)(paused) )
-};
-
-struct hashrate_t {
-    float value;
-    char unit;
-};
-
-struct pow_asset_meta {
-    string mining_pool;                             //e.g. 超算大陆
-    string pool_location;                           //e.g. 加拿大
-    string manufacturer;                            //manufacture info
-    string mine_coin_type;                          //btc, eth
-    hashrate_t hashrate;                            //hash_rate and hash_rate_unit(M/T) E.g. 21.457 MH/s
-    float power_in_watt;                            //E.g. 2100 Watt
-    asset electricity_day_charge;                   //E.g. "0.85 CNYD" for reference
-    asset daily_earning_est;                        //daily earning estimate: E.g. "0.00397002 AMETH"
-    uint16_t service_life_days;                     //service lifespan (E.g. 3*365)
-    uint8_t onshelf_days;                           //0: T+0, 1:T+1
-
-    pow_asset_meta() {};
-
-    EOSLIB_SERIALIZE(pow_asset_meta, (product_sn)(manufacturer)(mine_coin_type)(hashrate)(power_in_watt)
-                                    (electricity_day_charge)(daily_earning_est)(service_life_days)(onshelf_days) )
-};
-
-/**
- * POW Mining equipment asset
- * 
- */
-TBL pow_asset_t {
-    uint64_t symbid;
-    pow_asset_meta asset_meta;
-    
-    pow_asset_t() {}
-    pow_asset_t(const uint64_t& id): symbid(id) {}
-
-    uint64_t primary_key()const { return symbid; }
-
-    // uint64_t by_owner()const { return owner.value; }
-    uint64_t by_mine_coin()const { return name(asset_meta.mine_coin_type).value; }
-    // uint64_t by_started_at()const { return started_at.sec_since_epoch(); }
-
-    //unique index
-    // uint128_t by_owner_symbid()const { return (uint128_t) owner.value << 64 | (uint128_t) symbid; }
-  
-    EOSLIB_SERIALIZE(pow_asset_t, (symbid)(asset_meta) )
-
-    typedef eosio::multi_index
-    < "powassets"_n,  pow_asset_t,
-        // indexed_by<"owner"_n, const_mem_fun<pow_asset_t, uint64_t, &pow_asset_t::by_owner> >,
-        indexed_by<"minecoin"_n, const_mem_fun<pow_asset_t, uint64_t, &pow_asset_t::by_mine_coin> >
-        // indexed_by<"startedat"_n, const_mem_fun<pow_asset_t, uint64_t, &pow_asset_t::by_started_at> >,
-        //indexed_by<"ownersymbid"_n, const_mem_fun<pow_asset_t, uint128_t, &pow_asset_t::by_owner_symbid> >
-    > idx_t;
-};
-
 
 } // apollo
