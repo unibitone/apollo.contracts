@@ -167,6 +167,12 @@ TBL asset_t {
     asset_t(const uint64_t& i): id(i) {}
 
     uint64_t primary_key()const { return id; }
+    uint128_t by_unique_effected_at()const { return (uint128_t) token_id << 64 | (uint128_t) effected_at.sec_since_epoch(); }
+
+    typedef eosio::multi_index
+    < "assets"_n,  asset_t,
+        indexed_by<"ukeffectedat"_n, const_mem_fun<asset_t, uint128_t, &asset_t::by_unique_effected_at> >
+    > idx_t;
 
     EOSLIB_SERIALIZE(asset_t,   (id)(token_id)(effected_at)(last_recd_earning)(total_recd_earing)
                                 (total_paid_electricity_fees)(total_settled_times)(last_settled_at) )
