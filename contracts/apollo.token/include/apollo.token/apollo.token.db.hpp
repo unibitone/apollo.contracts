@@ -162,6 +162,9 @@ TBL asset_t {
     asset           total_paid_electricity_fees;
     uint64_t        total_settled_times;
     time_point_sec  last_settled_at;
+    time_point_sec  fee_discounted_from;
+    time_point_sec  fee_discounted_to;
+    uint16_t        fee_discount_rate; //boost by 10000
 
     asset_t() {}
     asset_t(const uint64_t& i): id(i) {}
@@ -175,7 +178,8 @@ TBL asset_t {
     > idx_t;
 
     EOSLIB_SERIALIZE(asset_t,   (id)(token_id)(effected_at)(last_recd_earning)(total_recd_earing)
-                                (total_paid_electricity_fees)(total_settled_times)(last_settled_at) )
+                                (total_paid_electricity_fees)(total_settled_times)(last_settled_at)
+                                (fee_discounted_from)(fee_discounted_to)(fee_discount_rate) )
 };
 
 ///Scope: owner's account
