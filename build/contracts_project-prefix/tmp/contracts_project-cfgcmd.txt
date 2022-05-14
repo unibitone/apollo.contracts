@@ -1,1 +1,0 @@
-cmd='/usr/local/Cellar/cmake/3.22.3/bin/cmake;-DCMAKE_TOOLCHAIN_FILE=/usr/local/amax.cdt/lib/cmake/amax.cdt/AmaxWasmToolchain.cmake;-DCONTRACT_VERSION_FILE=/Users/richardchen/work/apollo.contracts/build/version/ContractVersion.cmake;-GUnix Makefiles;<SOURCE_DIR><SOURCE_SUBDIR>'

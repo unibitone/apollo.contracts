@@ -1,1 +1,0 @@
-set(CONTRACT_VERSION 0.2.0-develop2-fc8b9f38d9ee2855d90135763db667ace714713e-dirty)
