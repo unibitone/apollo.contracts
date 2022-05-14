@@ -39,11 +39,13 @@ public:
     ~token() { _global.set( _gstate, get_self() ); }
    
    ACTION init();
+
    /*
-    * Create asset token
+    * Create token asset
     *
     */
-   ACTION create( const name& issuer, const uint16_t& asset_type, const string& uri, const int64_t& maximum_supply );
+   ACTION create( const name& issuer, const uint8_t& token_type, const string& uri, 
+                    const token_invars& invars, const token_vars& vars, const int64_t& maximum_supply );
 
    /**
     *  This action issues to `to` account a `quantity` of tokens.
@@ -74,8 +76,6 @@ public:
    [[eosio::action]]
    ACTION transfer(const name& from, const name& to, const token_asset& quantity, const string& memo );
    using transfer_action = action_wrapper< "transfer"_n, &token::transfer >;
-
-   ACTION setpowasset( const name& issuer, const uint64_t symbid, const pow_asset_meta& asset_meta);
 
    private:
    void add_balance( const name& owner, const token_asset& value );
