@@ -37,48 +37,18 @@ public:
     }
 
     ~sttle() { _global.set( _gstate, get_self() ); }
-   
-   ACTION init();
-   /*
-    * Create asset sttle
-    *
-    */
-   ACTION create( const name& issuer, const uint16_t& asset_type, const string& uri, const int64_t& maximum_supply );
 
-   /**
-    *  This action issues to `to` account a `quantity` of sttles.
-    *
-    * @param to - the account to issue sttles to, it must be the same as the issuer,
-    * @param quntity - the amount of sttles to be issued,
-    * @memo - the memo string that accompanies the sttle issue transaction.
-    */
-   [[eosio::action]]
-   void issue( const name& to, const sttle_asset& quantity, const string& memo );
 
-   [[eosio::action]]
-   void retire( const sttle_asset& quantity, const string& memo );
+    [[eosio::action]]
+    void setconf(const time& check_begin, const time& check_end, const time& sttle_begin, const time& sttle_end, const asset&  quantity, const hashrate_t&  hashrate);
 
-   /*
-    * Transfers assets.
-    *
-    * This action transfers one or more assets by changing scope.
-    * Sender's RAM will be charged to transfer asset.
-    * Transfer will fail if asset is offered for claim or is delegated.
-    *
-    * @param from is account who sends the asset.
-    * @param to is account of receiver.
-    * @param asset is array of asset_id & asset_quantity to transfer.
-    * @param memo is transfers comment.
-    * @return no return value.
-    */
-   [[eosio::action]]
-   ACTION transfer(const name& from, const name& to, const sttle_asset& quantity, const string& memo );
-   using transfer_action = action_wrapper< "transfer"_n, &sttle::transfer >;
+    [[eosio::action]]
+    void startmine(const String& nft_id, const time_point& mine_at, const time_point& start_at);
 
-   ACTION setpowasset( const name& issuer, const uint64_t symbid, const pow_asset_meta& asset_meta);
+    [[eosio::action]]
+    void deposits(const name& owner, const asset& quantity);
 
-   private:
-   void add_balance( const name& owner, const sttle_asset& value );
-   void sub_balance( const name& owner, const sttle_asset& value );
+    [[eosio::action]]
+    void destory(const string& nft_id);
 };
 } //namespace apollo
