@@ -102,6 +102,8 @@ struct asset_symbol {
     uint64_t raw()const { return (uint64_t) token_id << 32 | sub_token_id; }
 
     friend bool operator==(const asset_symbol&, const asset_symbol&);
+
+    EOSLIB_SERIALIZE(asset_symbol, (token_id)(sub_token_id) )
 };
 
 bool operator==(const asset_symbol& symb1, const asset_symbol& symb2) { 
@@ -120,6 +122,8 @@ struct token_asset {
         check( quantity.symbol == this->symbol, "symbol mismatch");
         this->amount -= quantity.amount; return *this; 
     }
+
+    EOSLIB_SERIALIZE(token_asset, (amount)(symbol) )
 };
 
 struct hashrate {
@@ -194,7 +198,7 @@ TBL tokenstats_t {
         indexed_by<"tokeninvars"_n, const_mem_fun<tokenstats_t, checksum256, &tokenstats_t::by_token_invars> >
     > idx_t;
 
-    EOSLIB_SERIALIZE(tokenstats_t, (token_id)(token_type)(token_uri)(invars)(vars)(max_supply)(supply)
+    EOSLIB_SERIALIZE(tokenstats_t,  (token_id)(token_type)(token_uri)(invars)(vars)(max_supply)(supply)
                                     (creator)(created_at)(paused) )
 };
 
