@@ -74,7 +74,7 @@ public:
     * @return no return value.
     */
    [[eosio::action]]
-   ACTION transfer(const name& from, const name& to, const token_asset& quantity, const string& memo );
+   ACTION transfer(const name& from, const name& to, token_asset& quantity, const string& memo );
    using transfer_action = action_wrapper< "transfer"_n, &token::transfer >;
 
    private:

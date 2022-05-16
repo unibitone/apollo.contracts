@@ -29,8 +29,23 @@ static constexpr uint64_t max_memo_size     = 1024;
 // static constexpr uint64_t seconds_per_year      = 24 * 3600 * 7 * 52;
 // static constexpr uint64_t seconds_per_month     = 24 * 3600 * 30;
 // static constexpr uint64_t seconds_per_week      = 24 * 3600 * 7;
-// static constexpr uint64_t seconds_per_day       = 24 * 3600;
+static constexpr uint64_t seconds_per_day       = 24 * 3600;
 // static constexpr uint64_t seconds_per_hour      = 3600;
+
+static constexpr uint64_t start_time_since_epoch   = 1655569098;    //Saturday, June 18, 2022 4:18:18 PM
+
+enum class err: uint8_t {
+    NONE                = 0,
+    RECORD_NOT_FOUND    = 1,
+    RECORD_EXISTING     = 2,
+    SYMBOL_MISMATCH     = 4,
+    PARAM_INCORRECT     = 8,
+    NO_AUTH             = 9,
+    NOT_POSITIVE        = 10,
+    NOT_STARTED         = 11,
+    OVERSIZED           = 12,
+
+};
 
 enum class token_type: uint8_t {
     NONE                  = 0,
@@ -45,6 +60,7 @@ enum class token_type: uint8_t {
 struct [[eosio::table("global"), eosio::contract("apollo.token")]] global_t {
     name admin;                 // default is contract self
     name fee_collector;         // mgmt fees to collector
+    name decommerce_contract;   // decommerce contract name
     uint64_t fee_rate = 4;      // boost by 10,000, i.e. 0.04%
     uint16_t curr_nft_cat_id = 0;
     uint16_t curr_nft_subcat_id = 1;
@@ -52,7 +68,7 @@ struct [[eosio::table("global"), eosio::contract("apollo.token")]] global_t {
     time_point_sec  started_at;
     bool active = false;
 
-    EOSLIB_SERIALIZE( global_t, (admin)(fee_collector)(fee_rate)
+    EOSLIB_SERIALIZE( global_t, (admin)(fee_collector)(decommerce_contract)(fee_rate)
                                 (curr_nft_cat_id)(curr_nft_subcat_id)(curr_nft_item_id)
                                 (started_at)(active) )
 };
@@ -72,26 +88,36 @@ enum class mine_coin: uint8_t {
     FIL         = 4
 };
 
-// struct asset_symbol {
-//     uint32_t token_id;      // 1:1 with NFT invars hash
-//     uint32_t token_subid;
+struct asset_symbol {
+    uint32_t token_id;      // 1:1 with NFT invars hash
+    uint32_t sub_token_id;   // can be token receiving date
+    //uint8_t precision = 0;
 
-//     uint64_t raw()const { return (uint64_t) token_id << 32 | token_subid; }
+    asset_symbol() {}
+    asset_symbol(const uint64_t raw) {
+        token_id = raw >> 32;
+        sub_token_id = (raw << 32) >> 32;
+    }
 
-//     friend bool operator==(const asset_symbol& symb) { return this->token_id == symb.token_id && this->token_subid == symb.token_subid; }
-// };
+    uint64_t raw()const { return (uint64_t) token_id << 32 | sub_token_id; }
+
+    friend bool operator==(const asset_symbol&, const asset_symbol&);
+};
+
+bool operator==(const asset_symbol& symb1, const asset_symbol& symb2) { 
+    return( symb1.token_id == symb2.token_id && symb1.sub_token_id == symb2.sub_token_id ); 
+}
 
 struct token_asset {
-    // asset_symbol    symbol;
-    uint64_t        token_id;
     int64_t         amount;
+    asset_symbol    symbol;
 
     token_asset& operator+=(const token_asset& quantity) { 
-        check( quantity.token_id == this->token_id, "token_id mismatch");
+        check( quantity.symbol == this->symbol, "symbol mismatch");
         this->amount += quantity.amount; return *this;
     } 
     token_asset& operator-=(const token_asset& quantity) { 
-        check( quantity.token_id == this->token_id, "token_id mismatch");
+        check( quantity.symbol == this->symbol, "symbol mismatch");
         this->amount -= quantity.amount; return *this; 
     }
 };
@@ -158,7 +184,7 @@ TBL tokenstats_t {
     uint64_t by_token_type()const { return (uint64_t) token_type; }
     checksum256 by_token_invars()const { 
         if (token_type == (uint8_t) token_type::POW)
-            return std::get<pow_asset_invariables>(invars).hash(""); 
+            return std::get<pow_asset_invariables>(invars).hash(to_string(token_type)); 
         else 
             return checksum256();
     }
@@ -186,7 +212,7 @@ TBL account_t {
     account_t() {}
     account_t(const token_asset& asset): balance(asset) {}
 
-    uint64_t    primary_key()const { return balance.token_id; }
+    uint64_t    primary_key()const { return balance.symbol.raw(); }
 
     typedef eosio::multi_index< "accounts"_n, account_t > idx_t;
 

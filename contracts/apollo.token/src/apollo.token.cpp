@@ -1,4 +1,5 @@
 #include <apollo.token/apollo.token.hpp>
+#include <utils.hpp>
 
 namespace apollo {
 
@@ -14,10 +15,10 @@ ACTION token::create( const name& issuer, const uint8_t& token_type, const strin
 {
    require_auth( get_self() );
 
-   check( is_account(issuer), "issuer account does not exist" );
-   check( issuer == _gstate.admin, "issuer is not an amdin user" );
-   check( maximum_supply > 0, "maximum_supply must be positive" );
-   check( token_uri.length() < 1024, "token_uri length > 1024: " + to_string(token_uri.length()) );
+   CHECKC(is_account(issuer), err::RECORD_NOT_FOUND, "issuer account does not exist" )
+   CHECKC(issuer == _gstate.admin, err::NO_AUTH, "issuer is not an amdin user" )
+   CHECKC(maximum_supply > 0, err::NOT_POSITIVE, "maximum_supply must be positive" )
+   CHECKC(token_uri.length() < 1024, err::OVERSIZED, "token_uri length > 1024: " + to_string(token_uri.length()) )
 
    tokenstats_t::idx_t tokenstats(_self, _self.value);
    tokenstats.emplace( _self, [&]( auto& item ) {
@@ -34,16 +35,16 @@ ACTION token::create( const name& issuer, const uint8_t& token_type, const strin
 
 ACTION token::issue( const name& to, const token_asset& quantity, const string& memo )
 {
-   check( memo.size() <= 256, "memo has more than 256 bytes" );
+   CHECKC(memo.size() <= 256, err::OVERSIZED, "memo has more than 256 bytes" )
 
-   auto stats = tokenstats_t(quantity.token_id);
-   check( _db.get(stats), "token not found: " + to_string(quantity.token_id) );
-   check( to == stats.creator, "tokens can only be issued to token creator" );
+   auto stats = tokenstats_t(quantity.symbol.token_id);
+   CHECKC(_db.get(stats), err::RECORD_NOT_FOUND, "token not found: " + to_string(quantity.symbol.token_id) )
+   CHECKC(to == stats.creator, err::NO_AUTH, "tokens can only be issued to token creator" )
    require_auth( stats.creator );
   
-   check( quantity.token_id == stats.token_id, "token id not found: " + to_string(stats.token_id) );
-   check( quantity.amount > 0, "must issue positive quantity" );
-   check( quantity.amount <= stats.max_supply - stats.supply, "quantity exceeds available supply");
+   CHECKC(quantity.symbol.token_id == stats.token_id, err::SYMBOL_MISMATCH, "token id not found: " + to_string(stats.token_id) )
+   CHECKC(quantity.amount > 0, err::NOT_POSITIVE, "must issue positive quantity" )
+   CHECKC(quantity.amount <= stats.max_supply - stats.supply, err::OVERSIZED, "quantity exceeds available supply");
 
    stats.supply += quantity.amount;
    _db.set( stats );
@@ -53,75 +54,69 @@ ACTION token::issue( const name& to, const token_asset& quantity, const string& 
 
 ACTION token::retire( const token_asset& quantity, const string& memo )
 {
-   check( memo.size() <= 256, "memo has more than 256 bytes" );
+   CHECKC(memo.size() <= 256, err::OVERSIZED, "memo has more than 256 bytes" )
 
-   auto token = tokenstats_t(quantity.token_id);
-   check( _db.get(token), "token asset not found: " + to_string(quantity.token_id) );
+   auto token = tokenstats_t(quantity.symbol.token_id);
+   CHECKC(_db.get(token), err::RECORD_NOT_FOUND, "token asset not found: " + to_string(quantity.symbol.token_id) )
 
    require_auth( token.creator );
-   check( quantity.amount > 0, "must retire positive quantity" );
-   check( quantity.token_id == token.token_id, "symbol mismatch" );
+   CHECKC(quantity.amount > 0, err::NOT_POSITIVE, "must retire positive quantity" )
+   CHECKC(quantity.symbol.token_id == token.token_id, err::SYMBOL_MISMATCH, "symbol mismatch" )
    token.supply -= quantity.amount;
    _db.set( token );
 
    sub_balance( token.creator, quantity );
 }
 
-ACTION token::transfer( const name& from, const name& to, const token_asset& quantity, const string& memo ) {
-   check( from != to, "cannot transfer to self" );
+ACTION token::transfer( const name& from, const name& to, token_asset& quantity, const string& memo ) {
+   CHECKC(from != to, err::NO_AUTH, "cannot transfer to self" );
+   
+   auto now = current_time_point();
+   CHECKC(now.sec_since_epoch() > start_time_since_epoch, err::NOT_STARTED, "not started yet" )
+
    require_auth( from );
-   check( is_account( to ), "to account does not exist");
-   auto tokenid = quantity.token_id;
+   CHECKC(is_account( to ), err::RECORD_NOT_FOUND, "to account does not exist");
+   auto tokenid = quantity.symbol.token_id;
    auto token = tokenstats_t(tokenid);
-   check( _db.get(token), "token asset not found: " + to_string(tokenid) );
+   CHECKC(_db.get(token), err::RECORD_NOT_FOUND, "token asset not found: " + to_string(tokenid) )
 
    require_recipient( from );
    require_recipient( to );
 
-   check( quantity.amount > 0, "must transfer positive quantity" );
-   check( quantity.token_id == token.token_id, "token_id mismatch" );
-   check( memo.size() <= 256, "memo has more than 256 bytes" );
-
-   // DeCommerce Contract ontransfer:
-   // if (to == _self && quantity.symbol.token_subid != 0) //put onsales 
-   //    quantity.symbol.token_subid = 0;
+   CHECKC(quantity.amount > 0, err::NOT_POSITIVE, "must transfer positive quantity" );
+   CHECKC(quantity.symbol.token_id == token.token_id, err::SYMBOL_MISMATCH, "token_id mismatch" )
+   CHECKC(memo.size() <= 256, err::OVERSIZED, "memo has more than 256 bytes" )
 
    sub_balance( from, quantity );
+   if (to == _gstate.decommerce_contract) {           //transfer: to sell or resell
+      quantity.symbol.sub_token_id = 0;
+
+   } else if (from == _gstate.decommerce_contract) {  //transfer: to buy
+      quantity.symbol.sub_token_id = (now.sec_since_epoch() - start_time_since_epoch) / seconds_per_day;
+   } 
    add_balance( to, quantity );
+
 }
 
 void token::add_balance( const name& owner, const token_asset& value ) {
    auto to_acnt = account_t(value);
    if (_db.get(owner.value, to_acnt)) {
       to_acnt.balance += value;
+      _db.set( owner.value, to_acnt );
+
    } else {
       to_acnt.balance = value;
+      _db.set( owner.value, to_acnt, false );
    }
-
-   _db.set( owner.value, to_acnt );
 }
 
 void token::sub_balance( const name& owner, const token_asset& value ) {
    auto from_acnt = account_t(value);
-   check( _db.get(owner.value, from_acnt), "account balance not found" );
-   check( from_acnt.balance.amount >= value.amount, "overdrawn balance" );
+   CHECKC(_db.get(owner.value, from_acnt), err::RECORD_NOT_FOUND, "account balance not found" )
+   CHECKC(from_acnt.balance.amount >= value.amount, err::OVERSIZED, "overdrawn balance" );
 
    from_acnt.balance -= value;
    _db.set( owner.value, from_acnt );
 }
-
-// ACTION token::setasset( const name& issuer, const uint64_t token_id, const pow_asset_meta& asset_meta) {
-//    require_auth( issuer );
-//    check( issuer == _gstate.admin, "non-admin issuer not allowed" );
-
-//    auto stats = tokenstats_t(token_id);
-//    check( _db.get(stats), "asset token not found: " + to_string(token_id) );
-
-//    auto pow = pow_asset_t(token_id);
-//    pow.asset_meta    = asset_meta;
-
-//    _db.set( pow );
-
-// }
 
 } /// namespace apollo

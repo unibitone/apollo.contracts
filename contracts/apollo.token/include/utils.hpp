@@ -27,6 +27,7 @@ using namespace std;
 #define TRACE_L(...) TRACE(__VA_ARGS__, "\n")
 
 #define CHECK(exp, msg) { if (!(exp)) eosio::check(false, msg); }
+#define CHECKC(exp, code, msg)  { if (!(exp)) eosio::check(false, string("$$$") + to_string((int)code) + string("$$$ ") + msg); }
 
 
 template<typename T>
@@ -159,4 +160,18 @@ asset asset_from_string(string_view from)
     amount += fract_part;
 
     return asset(amount.value, sym);
+}
+
+/**
+ * EG: "8,ETH" "8,BTC"
+ * */
+symbol to_symbol(const string& str) {
+   auto symbol_parts = split( str, "," );
+   return symbol(symbol_parts[1], stoi(string(symbol_parts[0])));
+}
+
+uint128_t make128key(uint64_t a, uint64_t b) {
+    uint128_t aa = a;
+    uint128_t bb = b;
+    return (aa << 64) + bb;
 }

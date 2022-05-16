@@ -70,21 +70,22 @@ public:
         }
     }
     template<typename RecordType>
-    return_t set(const uint64_t& scope, const RecordType& record) {
+    return_t set(const uint64_t& scope, const RecordType& record, const bool& isModify = true) {
         typename RecordType::idx_t idx(code, scope);
-        auto itr = idx.find( record.primary_key() );
-        if ( itr != idx.end()) {
+        
+        if (isModify) {
+            auto itr = idx.find( record.primary_key() );
+            check( itr != idx.end(), "record not found" );
             idx.modify( itr, code, [&]( auto& item ) {
                 item = record;
             });
             return return_t::MODIFIED;
+        } 
 
-        } else {
-            idx.emplace( code, [&]( auto& item ) {
-                item = record;
-            });
-            return return_t::APPENDED;
-        }
+        idx.emplace( code, [&]( auto& item ) {
+            item = record;
+        });
+        return return_t::APPENDED;
     }
 
     template<typename RecordType>
