@@ -77,8 +77,9 @@ public:
    ACTION transfer(const name& from, const name& to, token_asset& quantity, const string& memo );
    using transfer_action = action_wrapper< "transfer"_n, &token::transfer >;
 
-   private:
+private:
    void add_balance( const name& owner, const token_asset& value );
    void sub_balance( const name& owner, const token_asset& value );
+   uint64_t gen_sub_token_id(const time_point_sec& now);
 };
 } //namespace apollo

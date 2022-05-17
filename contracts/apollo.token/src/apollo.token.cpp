@@ -3,6 +3,10 @@
 
 namespace apollo {
 
+uint64_t token::gen_sub_token_id(const time_point_sec& now) {
+   return (now.sec_since_epoch() - start_time_since_epoch) / seconds_per_day;
+}
+
 ACTION token::init() {
    // _db.del( tokenstats );
 
@@ -92,7 +96,7 @@ ACTION token::transfer( const name& from, const name& to, token_asset& quantity,
       quantity.symbol.sub_token_id = 0;
 
    } else if (from == _gstate.decommerce_contract) {  //transfer: to buy
-      quantity.symbol.sub_token_id = (now.sec_since_epoch() - start_time_since_epoch) / seconds_per_day;
+      quantity.symbol.sub_token_id = gen_sub_token_id(now);
    } 
    add_balance( to, quantity );
 
