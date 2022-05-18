@@ -54,11 +54,9 @@ public:
     * @param quntity - the amount of tokens to be issued,
     * @memo - the memo string that accompanies the token issue transaction.
     */
-   [[eosio::action]]
-   void issue( const name& to, const token_asset& quantity, const string& memo );
+   ACTION issue( const name& to, const token_asset& quantity, const string& memo );
 
-   [[eosio::action]]
-   void retire( const token_asset& quantity, const string& memo );
+   ACTION retire( const token_asset& quantity, const string& memo );
 
    /*
     * Transfers assets.
@@ -73,9 +71,12 @@ public:
     * @param memo is transfers comment.
     * @return no return value.
     */
-   [[eosio::action]]
    ACTION transfer(const name& from, const name& to, token_asset& quantity, const string& memo );
    using transfer_action = action_wrapper< "transfer"_n, &token::transfer >;
+
+   ACTION pausetoken(const uint64_t& token_id, const bool paused);
+   ACTION pauseaccount(const name& owner, const asset_symbol& symbol, const bool paused);
+
 
 private:
    void add_balance( const name& owner, const token_asset& value );

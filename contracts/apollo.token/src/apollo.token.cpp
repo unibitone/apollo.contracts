@@ -123,4 +123,29 @@ void token::sub_balance( const name& owner, const token_asset& value ) {
    _db.set( owner.value, from_acnt );
 }
 
+void token::pausetoken(const uint64_t& token_id, const bool paused) {
+   require_auth( _gstate.admin );
+
+   auto tokenstats = tokenstats_t(token_id);
+   CHECKC( _db.get(tokenstats), err::RECORD_NOT_FOUND, "token not found: " + to_string(token_id) )
+   CHECKC( tokenstats.paused != paused, err::PARAM_INCORRECT, "already paused: " + to_string(paused) )
+
+   tokenstats.paused = paused;
+   _db.set( tokenstats );
+
+}
+
+void token::pauseaccount(const name& owner, const asset_symbol& symbol, const bool paused) {
+   require_auth( _gstate.admin );
+
+   auto tokenasset = token_asset(symbol);
+   auto account = account_t(tokenasset);
+   CHECKC( _db.get(owner.value, account), err::RECORD_NOT_FOUND, "account balance not found: " + owner.to_string() )
+   CHECKC( account.paused != paused, err::PARAM_INCORRECT, "already paused: " + to_string(paused) )
+      
+   account.paused = paused;
+   _db.set( owner.value, account );
+
+}
+
 } /// namespace apollo

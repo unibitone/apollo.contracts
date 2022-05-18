@@ -114,6 +114,9 @@ struct token_asset {
     int64_t         amount;
     asset_symbol    symbol;
 
+    token_asset() {}
+    token_asset(const asset_symbol& symb): amount(0), symbol(symb) {}
+
     token_asset& operator+=(const token_asset& quantity) { 
         check( quantity.symbol == this->symbol, "symbol mismatch");
         this->amount += quantity.amount; return *this;
@@ -201,6 +204,7 @@ TBL tokenstats_t {
     EOSLIB_SERIALIZE(tokenstats_t,  (token_id)(token_type)(token_uri)(invars)(vars)(max_supply)(supply)
                                     (creator)(created_at)(paused) )
 };
+
 
 // struct fee_discount_config { //apply to token_id level for all sub_token_ids
 //     time_point_sec begin;
