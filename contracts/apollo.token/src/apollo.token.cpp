@@ -116,8 +116,13 @@ void token::add_balance( const name& owner, const token_asset& value ) {
 
 void token::sub_balance( const name& owner, const token_asset& value ) {
    auto from_acnt = account_t(value);
-   CHECKC(_db.get(owner.value, from_acnt), err::RECORD_NOT_FOUND, "account balance not found" )
-   CHECKC(from_acnt.balance.amount >= value.amount, err::OVERSIZED, "overdrawn balance" );
+   CHECKC( _db.get(owner.value, from_acnt), err::RECORD_NOT_FOUND, "account balance not found" )
+   CHECKC( !from_acnt.paused, err::PAUSED, "account balance being paused" )
+   CHECKC( from_acnt.balance.amount >= value.amount, err::OVERSIZED, "overdrawn balance" );
+
+   auto token = tokenstats_t( from_acnt.balance.symbol.token_id );
+   CHECKC( _db.get(token), err::RECORD_NOT_FOUND, "token not found: " + to_string(token.token_id) )
+   CHECKC( !token.paused, err::PAUSED, "token being paused: " + to_string(token.token_id) )
 
    from_acnt.balance -= value;
    _db.set( owner.value, from_acnt );

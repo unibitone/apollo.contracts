@@ -39,11 +39,12 @@ enum class err: uint8_t {
     RECORD_NOT_FOUND    = 1,
     RECORD_EXISTING     = 2,
     SYMBOL_MISMATCH     = 4,
-    PARAM_INCORRECT     = 8,
-    NO_AUTH             = 9,
-    NOT_POSITIVE        = 10,
-    NOT_STARTED         = 11,
-    OVERSIZED           = 12,
+    PARAM_INCORRECT     = 5,
+    PAUSED              = 6,
+    NO_AUTH             = 7,
+    NOT_POSITIVE        = 8,
+    NOT_STARTED         = 9,
+    OVERSIZED           = 10,
 
 };
 
