@@ -39,11 +39,12 @@ enum class err: uint8_t {
     RECORD_NOT_FOUND    = 1,
     RECORD_EXISTING     = 2,
     SYMBOL_MISMATCH     = 4,
-    PARAM_INCORRECT     = 8,
-    NO_AUTH             = 9,
-    NOT_POSITIVE        = 10,
-    NOT_STARTED         = 11,
-    OVERSIZED           = 12,
+    PARAM_INCORRECT     = 5,
+    PAUSED              = 6,
+    NO_AUTH             = 7,
+    NOT_POSITIVE        = 8,
+    NOT_STARTED         = 9,
+    OVERSIZED           = 10,
 
 };
 
@@ -113,6 +114,9 @@ bool operator==(const asset_symbol& symb1, const asset_symbol& symb2) {
 struct token_asset {
     int64_t         amount;
     asset_symbol    symbol;
+
+    token_asset() {}
+    token_asset(const asset_symbol& symb): amount(0), symbol(symb) {}
 
     token_asset& operator+=(const token_asset& quantity) { 
         check( quantity.symbol == this->symbol, "symbol mismatch");
@@ -202,7 +206,8 @@ TBL tokenstats_t {
                                     (creator)(created_at)(paused) )
 };
 
-// struct fee_discount_config {
+
+// struct fee_discount_config { //apply to token_id level for all sub_token_ids
 //     time_point_sec begin;
 //     time_point_sec end;
 //     uint16_t       discount_rate; //boost by 10000
@@ -211,6 +216,7 @@ TBL tokenstats_t {
 ///Scope: owner's account
 TBL account_t {
     token_asset     balance;
+    name            beneficiary;    //usually it is the same account owner
     bool paused     = false;   //if true, it can no longer be transferred
 
     account_t() {}
@@ -220,7 +226,7 @@ TBL account_t {
 
     typedef eosio::multi_index< "accounts"_n, account_t > idx_t;
 
-    EOSLIB_SERIALIZE(account_t, (balance)(paused) )
+    EOSLIB_SERIALIZE(account_t, (balance)(beneficiary)(paused) )
 
 };
 

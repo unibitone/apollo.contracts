@@ -3,6 +3,10 @@
 
 namespace apollo {
 
+uint64_t token::gen_sub_token_id(const time_point_sec& now) {
+   return (now.sec_since_epoch() - start_time_since_epoch) / seconds_per_day;
+}
+
 ACTION token::init() {
    // _db.del( tokenstats );
 
@@ -92,7 +96,7 @@ ACTION token::transfer( const name& from, const name& to, token_asset& quantity,
       quantity.symbol.sub_token_id = 0;
 
    } else if (from == _gstate.decommerce_contract) {  //transfer: to buy
-      quantity.symbol.sub_token_id = (now.sec_since_epoch() - start_time_since_epoch) / seconds_per_day;
+      quantity.symbol.sub_token_id = gen_sub_token_id(now);
    } 
    add_balance( to, quantity );
 
@@ -112,11 +116,41 @@ void token::add_balance( const name& owner, const token_asset& value ) {
 
 void token::sub_balance( const name& owner, const token_asset& value ) {
    auto from_acnt = account_t(value);
-   CHECKC(_db.get(owner.value, from_acnt), err::RECORD_NOT_FOUND, "account balance not found" )
-   CHECKC(from_acnt.balance.amount >= value.amount, err::OVERSIZED, "overdrawn balance" );
+   CHECKC( _db.get(owner.value, from_acnt), err::RECORD_NOT_FOUND, "account balance not found" )
+   CHECKC( !from_acnt.paused, err::PAUSED, "account balance being paused" )
+   CHECKC( from_acnt.balance.amount >= value.amount, err::OVERSIZED, "overdrawn balance" );
+
+   auto token = tokenstats_t( from_acnt.balance.symbol.token_id );
+   CHECKC( _db.get(token), err::RECORD_NOT_FOUND, "token not found: " + to_string(token.token_id) )
+   CHECKC( !token.paused, err::PAUSED, "token being paused: " + to_string(token.token_id) )
 
    from_acnt.balance -= value;
    _db.set( owner.value, from_acnt );
+}
+
+void token::pausetoken(const uint64_t& token_id, const bool paused) {
+   require_auth( _gstate.admin );
+
+   auto tokenstats = tokenstats_t(token_id);
+   CHECKC( _db.get(tokenstats), err::RECORD_NOT_FOUND, "token not found: " + to_string(token_id) )
+   CHECKC( tokenstats.paused != paused, err::PARAM_INCORRECT, "already paused: " + to_string(paused) )
+
+   tokenstats.paused = paused;
+   _db.set( tokenstats );
+
+}
+
+void token::pauseaccount(const name& owner, const asset_symbol& symbol, const bool paused) {
+   require_auth( _gstate.admin );
+
+   auto tokenasset = token_asset(symbol);
+   auto account = account_t(tokenasset);
+   CHECKC( _db.get(owner.value, account), err::RECORD_NOT_FOUND, "account balance not found: " + owner.to_string() )
+   CHECKC( account.paused != paused, err::PARAM_INCORRECT, "already paused: " + to_string(paused) )
+      
+   account.paused = paused;
+   _db.set( owner.value, account );
+
 }
 
 } /// namespace apollo
