@@ -16,39 +16,50 @@ using namespace wasm::db;
  * The `apollo.sttle` is settlement contract
  * 
  */
+
+namespace sttle_status {
+    static constexpr eosio::name PAUSE          = "pause"_n;
+    static constexpr eosio::name START          = "start"_n;
+    static constexpr eosio::name DEL            = "del"_n;
+
+};
+
+namespace sttle_type {
+    static constexpr eosio::name ADMIN          = "admin"_n;
+    static constexpr eosio::name OWNER          = "owner"_n;
+
+};
+
+static constexpr eosio::name APOLLO_TOKEN{"apollo.token"_n};
+//
+static constexpr eosio::name APOLLO_EV{"apollo.ev"_n};
+static constexpr eosio::name AM_TOKEN{"aplink"_n};
+static constexpr symbol   AM_SYMBOL = symbol(symbol_code("APLINK"), 2);
+//
+
 class [[eosio::contract("apollo.sttle")]] sttle : public contract {
 private:
-   dbc                 _db;
-   global_singleton    _global;
-   global_t            _gstate;
+   dbc        _db;
+   dbc        _apollo_db;
+   dbc        _am_db;
 
 public:
    using contract::contract;
 
    sttle(eosio::name receiver, eosio::name code, datastream<const char*> ds):
-        _db(_self), contract(receiver, code, ds), _global(_self, _self.value) {
-        if (_global.exists()) {
-            _gstate = _global.get();
-
-        } else { // first init
-            _gstate = global_t{};
-            _gstate.admin = _self;
-        }
-    }
-
-    ~sttle() { _global.set( _gstate, get_self() ); }
-
+        _db(_self), _apollo_db(APOLLO_TOKEN), _am_db(AM_TOKEN), contract(receiver, code, ds), _global(_self, _self.value) {
+   }
 
     [[eosio::action]]
-    void setconf(const time& check_begin, const time& check_end, const time& sttle_begin, const time& sttle_end, const asset&  quantity, const hashrate_t&  hashrate);
+    void startmine(const uint32_t& token_id, const name& owner, const name& beneficiary);
 
     [[eosio::action]]
-    void startmine(const String& nft_id, const time_point& mine_at, const time_point& start_at);
+    void settlement(const name& owner, const uint32_t& sub_token_id, const uinuint16_tt32_t& type );
 
     [[eosio::action]]
-    void deposits(const name& owner, const asset& quantity);
+    void pause(const name& owner, const uint32_t& sub_token_id);
 
     [[eosio::action]]
-    void destory(const string& nft_id);
+    void destory(const uint32_t& sub_token_id);
 };
 } //namespace apollo
