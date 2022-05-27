@@ -58,6 +58,13 @@ int128_t multiply_decimal(int128_t a, int128_t b, int128_t precision) {
 #define multiply_i64(a, b) multiply<int64_t>(a, b)
 
 
+int64_t multiply_revenue_i(float a, int64_t b) {
+    float tmp =  a * b ;
+    return tmp;
+}
+#define multiply_revenue(a, b) multiply_revenue_i(a, b)
+
+
 inline constexpr int64_t power(int64_t base, int64_t exp) {
     int64_t ret = 1;
     while( exp > 0  ) {
