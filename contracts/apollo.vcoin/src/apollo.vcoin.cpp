@@ -7,7 +7,7 @@ static constexpr eosio::name active_permission{"active"_n};
 			act.send( _self, to, quantity , memo );}
 
 #define ISSUE(to, quantity, memo) \
-    {	token::issue_action act{ _self, { {to, active_permission} } };\
+    {	token::issue_action act{ _self, { {_self, active_permission} } };\
 			act.send( to, quantity , memo );}
 
 namespace apollo {
@@ -39,7 +39,7 @@ void token::create( const name& burner,
 
 void token::issue( const name& to, const asset& quantity, const string& memo )
 {
-   check(get_first_receiver() == CNYD_BANK, "must transfer by contract: " + CNYD_BANK.to_string());  
+   require_auth( get_self() );
    auto sym = quantity.symbol;
    check( sym.is_valid(), "invalid symbol name" );
    check( memo.size() <= 256, "memo has more than 256 bytes" );
@@ -58,8 +58,8 @@ void token::issue( const name& to, const asset& quantity, const string& memo )
       s.supply += quantity;
    });
 
-   // add_balance( to, quantity, get_self());
-   add_balance( to, quantity, to);
+   add_balance( to, quantity, get_self());
+   // add_balance( to, quantity, to);
 }
 
 void token::retire( const asset& quantity, const string& memo )
