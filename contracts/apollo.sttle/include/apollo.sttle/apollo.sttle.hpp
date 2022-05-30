@@ -14,7 +14,7 @@ using namespace wasm::db;
 
 /**
  * The `apollo.sttle` is settlement contract
- * 
+ *
  */
 
 namespace sttle_status {
@@ -30,6 +30,24 @@ namespace sttle_type {
 
 };
 
+enum class err: uint8_t {
+    NONE                = 0,
+    RECORD_NOT_FOUND    = 1,
+    RECORD_EXISTING     = 2,
+    SYMBOL_MISMATCH     = 4,
+    PARAM_INCORRECT     = 5,
+    PAUSED              = 6,
+    NO_AUTH             = 7,
+    NOT_POSITIVE        = 8,
+    NOT_STARTED         = 9,
+    OVERSIZED           = 10,
+    RECORD_DEL          = 11,
+    RECORD_SETTLED      = 12,
+    STRATED             = 13,
+    OPERATION_FAILURE   = 14
+
+};
+
 static constexpr eosio::name APOLLO_TOKEN{"apollo.token"_n};
 //
 static constexpr eosio::name APOLLO_EV{"apollo.ev"_n};
@@ -39,16 +57,16 @@ static constexpr symbol   AM_SYMBOL = symbol(symbol_code("APLINK"), 2);
 
 class [[eosio::contract("apollo.sttle")]] sttle : public contract {
 private:
-   dbc        _db;
-   dbc        _apollo_db;
-   dbc        _am_db;
+    dbc        _db;
+    dbc        _apollo_db;
+    dbc        _am_db;
 
 public:
-   using contract::contract;
+    using contract::contract;
 
-   sttle(eosio::name receiver, eosio::name code, datastream<const char*> ds):
+     sttle(eosio::name receiver, eosio::name code, datastream<const char*> ds):
         _db(_self), _apollo_db(APOLLO_TOKEN), _am_db(AM_TOKEN), contract(receiver, code, ds), _global(_self, _self.value) {
-   }
+     }
 
     [[eosio::action]]
     void startmine(const uint32_t& token_id, const name& owner, const name& beneficiary);
@@ -61,5 +79,8 @@ public:
 
     [[eosio::action]]
     void destory(const uint32_t& sub_token_id);
+
+    [[eosio::action]]
+    void start( const name& owner, const uint64_t& id );
 };
 } //namespace apollo

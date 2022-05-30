@@ -27,7 +27,7 @@ using namespace std;
 #define TRACE_L(...) TRACE(__VA_ARGS__, "\n")
 
 #define CHECK(exp, msg) { if (!(exp)) eosio::check(false, msg); }
-
+#define CHECKC(exp, code, msg)  { if (!(exp)) eosio::check(false, string("$$$") + to_string((int)code) + string("$$$ ") + msg); }
 
 template<typename T>
 int128_t multiply(int128_t a, int128_t b) {
