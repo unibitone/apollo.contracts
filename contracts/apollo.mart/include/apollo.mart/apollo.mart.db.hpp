@@ -62,40 +62,40 @@ struct token_asset {
     EOSLIB_SERIALIZE(token_asset, (amount)(symbol) )
 };    
 
-enum apollo_token_status {
-    APOLLO_STATUS_NONE      = 0,
-    APOLLO_STATUS_SHELVE    = 1,
-    APOLLO_STATUS_OFFSHELVE = 2,
-    APOLLO_STATUS_SELLOUT   = 3
-};
 
-enum apollo_token_sell_type {
-    APOLLO_SELL_TYPE_NONE      = 0,
-    APOLLO_SELL_TYPE_ONSALE    = 1
-};
 
-struct MART_TBL apollo_token_t{
-    uint64_t id;
-    token_asset sell_token;
-    asset electricity_price;
-    asset token_price;
+static constexpr name ORDER_STATUS_NONE     = "none"_n;
+static constexpr name ORDER_STATUS_SHELF    = "shelf"_n;
+static constexpr name ORDER_STATUS_OFFSHELF = "offshelf"_n;
+static constexpr name ORDER_STATUS_SELLOUT  = "sellout"_n;
+
+
+
+static constexpr name SELL_TYPE_NONE = "none"_n;
+static constexpr name SELL_TYPE_ONSALE = "onsale"_n;
+
+struct MART_TBL sell_order_t{
+    token_asset quantity;
+    asset price;
+    asset electricity_fee;
     time_point created_at;
     time_point updated_at;
-    uint8_t status = 0;
-    uint8_t sell_type = 0;
+    name status = ORDER_STATUS_NONE;
+    name sell_type = SELL_TYPE_NONE;
     uint8_t discount = 100;
 
-    uint64_t primary_key() const { return id; }
+    uint64_t primary_key() const { return quantity.symbol.token_id; }
 
-    typedef multi_index<"selltokens"_n, apollo_token_t
+    typedef multi_index<"selltokens"_n, sell_order_t
         > tbl_t;
-    EOSLIB_SERIALIZE(apollo_token_t,(id)(sell_token)(electricity_price)(token_price)(created_at)(updated_at)(status)(sell_type)(discount))
+    EOSLIB_SERIALIZE(sell_order_t,(quantity)(electricity_fee)(price)(created_at)(updated_at)(status)(sell_type)(discount))
 };
 
-struct MART_TBL token_order_t{
+//todo table name deal
+struct MART_TBL deal_t{
     uint64_t id;
     token_asset sell_token;
-    asset electricity_price;
+    asset electricity_fee;
     asset token_price;
     int64_t buy_quantity;
     asset pay_amount;
@@ -106,8 +106,8 @@ struct MART_TBL token_order_t{
 
     uint64_t primary_key() const { return id; }
 
-    typedef multi_index<"tokenorders"_n, token_order_t
+    typedef multi_index<"tokenorders"_n, deal_t
         > tbl_t;
-    EOSLIB_SERIALIZE(token_order_t,(id)(sell_token)(electricity_price)(token_price)(buy_quantity)(pay_amount)(buyer)(discount)(created_at)(status))
+    EOSLIB_SERIALIZE(deal_t,(id)(sell_token)(electricity_fee)(token_price)(buy_quantity)(pay_amount)(buyer)(discount)(created_at)(status))
 };
 }
