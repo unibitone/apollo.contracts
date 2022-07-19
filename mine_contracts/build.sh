@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
+export PROJECT_DIR=$( dirname "${BASH_SOURCE[0]}" )
+export ROOT_DIR=${PROJECT_DIR}/..
+
 set -eo pipefail
 
 # Source helper functions and variables.
-. ./scripts/.environment
-. ./scripts/helper.sh
+. ${ROOT_DIR}/scripts/.environment
+. ${ROOT_DIR}/scripts/helper.sh
 
 # Prompt user for location of amax.cdt.
 cdt-directory-prompt

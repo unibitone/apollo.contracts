@@ -2,7 +2,9 @@ add_contract(apollo.mart apollo.mart ${CMAKE_CURRENT_SOURCE_DIR}/src/apollo.mart
 
 target_include_directories(apollo.mart
    PUBLIC
-   ${CMAKE_CURRENT_SOURCE_DIR}/include)
+   ${CMAKE_CURRENT_SOURCE_DIR}/include
+   ${CMAKE_CURRENT_SOURCE_DIR}/../apollo.token/include
+)
 
 set_target_properties(apollo.mart
    PROPERTIES

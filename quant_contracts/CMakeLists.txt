@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(deotc)
+project(quant)
 
 set(VERSION_MAJOR 0)
-set(VERSION_MINOR 2)
+set(VERSION_MINOR 1)
 set(VERSION_PATCH 0)
-set(VERSION_SUFFIX develop2)
+# set(VERSION_SUFFIX develop2)
 
 
 set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
@@ -28,7 +28,7 @@ include(ExternalProject)
 
 find_package(amax.cdt)
 
-message(STATUS "Building deotc v${VERSION_FULL}")
+message(STATUS "Building ${CMAKE_PROJECT_NAME} v${VERSION_FULL}")
 
 set(AMAX_CDT_VERSION_MIN "1.7")
 set(AMAX_CDT_VERSION_SOFT_MAX "1.9")

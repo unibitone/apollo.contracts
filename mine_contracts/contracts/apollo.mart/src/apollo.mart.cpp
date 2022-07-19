@@ -1,16 +1,16 @@
-#include <apollo.token/apollo.token.hpp>
+#include <apollo.mart/apollo.mart.hpp>
 
 namespace apollo {
 
-ACTION token::init() {
-   auto tokenstats = tokenstats_t(0);
-   _db.del( tokenstats );
+// ACTION mart::init() {
+//    auto tokenstats = tokenstats_t(0);
+//    _db.del( tokenstats );
 
-   // _gstate.initialized = true;
+//    // _gstate.initialized = true;
 
-}
+// }
 
-ACTION token::create( const name& issuer, const uint16_t& asset_type, const string& uri, const int64_t& maximum_supply )
+ACTION mart::create( const name& issuer, const uint16_t& asset_type, const string& uri, const int64_t& maximum_supply )
 {
    require_auth( get_self() );
 
@@ -30,7 +30,7 @@ ACTION token::create( const name& issuer, const uint16_t& asset_type, const stri
    });
 }
 
-ACTION token::issue( const name& to, const token_asset& quantity, const string& memo )
+ACTION mart::issue( const name& to, const token_asset& quantity, const string& memo )
 {
    auto symid = quantity.symbid;
    check( memo.size() <= 256, "memo has more than 256 bytes" );
@@ -39,7 +39,7 @@ ACTION token::issue( const name& to, const token_asset& quantity, const string& 
    check( _db.get(stats), "asset token not found: " + to_string(quantity.symbid) );
    check( to == stats.issuer, "tokens can only be issued to issuer account" );
    require_auth( stats.issuer );
-  
+
    check( quantity.symbid == stats.symbid, "symbol ID mismatch" );
    check( quantity.amount > 0, "must issue positive quantity" );
    check( quantity.amount <= stats.max_supply - stats.supply, "quantity exceeds available supply");
@@ -50,7 +50,7 @@ ACTION token::issue( const name& to, const token_asset& quantity, const string& 
    add_balance( stats.issuer, quantity );
 }
 
-ACTION token::retire( const token_asset& quantity, const string& memo )
+ACTION mart::retire( const token_asset& quantity, const string& memo )
 {
    auto symbid = quantity.symbid;
    check( memo.size() <= 256, "memo has more than 256 bytes" );
@@ -67,7 +67,7 @@ ACTION token::retire( const token_asset& quantity, const string& memo )
    sub_balance( token.issuer, quantity );
 }
 
-ACTION token::transfer( const name& from, const name& to, const token_asset& quantity, const string& memo ) {
+ACTION mart::transfer( const name& from, const name& to, const token_asset& quantity, const string& memo ) {
    check( from != to, "cannot transfer to self" );
    require_auth( from );
    check( is_account( to ), "to account does not exist");
@@ -106,7 +106,7 @@ void token::sub_balance( const name& owner, const token_asset& value ) {
    _db.set( owner.value, from_acnt );
 }
 
-ACTION token::setpowasset( const name& issuer, const uint64_t symbid, const pow_asset_meta& asset_meta) {
+ACTION mart::setpowasset( const name& issuer, const uint64_t symbid, const pow_asset_meta& asset_meta) {
    require_auth( issuer );
    check( issuer == _gstate.admin, "non-admin issuer not allowed" );
 

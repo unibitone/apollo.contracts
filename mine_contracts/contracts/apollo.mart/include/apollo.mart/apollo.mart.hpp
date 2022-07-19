@@ -14,7 +14,7 @@ using namespace wasm::db;
 
 /**
  * The `apollo.mart` is de-commerce contract
- * 
+ *
  */
 class [[eosio::contract("apollo.mart")]] mart : public contract {
 private:
@@ -37,7 +37,7 @@ public:
     }
 
     ~mart() { _global.set( _gstate, get_self() ); }
-   
+
    ACTION init();
    /*
     * Create asset mart
