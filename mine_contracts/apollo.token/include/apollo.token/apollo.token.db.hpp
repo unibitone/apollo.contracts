@@ -63,15 +63,10 @@ struct [[eosio::table("global"), eosio::contract("apollo.token")]] global_t {
     name fee_collector;         // mgmt fees to collector
     name decommerce_contract;   // decommerce contract name
     uint64_t fee_rate = 4;      // boost by 10,000, i.e. 0.04%
-    uint16_t curr_nft_cat_id = 0;
-    uint16_t curr_nft_subcat_id = 1;
-    uint32_t curr_nft_item_id = 2;
-    time_point_sec  started_at;
     bool active = false;
 
     EOSLIB_SERIALIZE( global_t, (admin)(fee_collector)(decommerce_contract)(fee_rate)
-                                (curr_nft_cat_id)(curr_nft_subcat_id)(curr_nft_item_id)
-                                (started_at)(active) )
+                                (active) )
 };
 typedef eosio::singleton< "global"_n, global_t > global_singleton;
 
