@@ -1,123 +1,133 @@
-#include <apollo.token/apollo.token.hpp>
+#include <apollo.mart/apollo.mart.hpp>
+#include <apollo.token.hpp>
+#include <cnyd.token.hpp>
+#include <utils.hpp>
 
-namespace apollo {
+using namespace db;
+using namespace apollo;
+using namespace cnyd;
 
-ACTION token::init() {
-   auto tokenstats = tokenstats_t(0);
-   _db.del( tokenstats );
+static constexpr eosio::name active_permission{"active"_n};
 
-   // _gstate.initialized = true;
 
-}
-
-ACTION token::create( const name& issuer, const uint16_t& asset_type, const string& uri, const int64_t& maximum_supply )
-{
-   require_auth( get_self() );
-
-   check( is_account(issuer), "issuer account does not exist" );
-   check( issuer == _gstate.admin, "issuer is not an amdin user" );
-   check( maximum_supply > 0, "maximum_supply must be positive" );
-   check( uri.length() < 1024, "uri length > 1024: " + to_string(uri.length()) );
-
-   tokenstats_t::idx_t tokenstats(_self, _self.value);
-   tokenstats.emplace( _self, [&]( auto& item ) {
-      item.symbid = tokenstats.available_primary_key();
-      item.type = asset_type;
-      item.uri = uri;
-      item.max_supply = maximum_supply;
-      item.issuer = issuer;
-      item.created_at = current_time_point();
-   });
-}
-
-ACTION token::issue( const name& to, const token_asset& quantity, const string& memo )
-{
-   auto symid = quantity.symbid;
-   check( memo.size() <= 256, "memo has more than 256 bytes" );
-
-   auto stats = tokenstats_t(quantity.symbid);
-   check( _db.get(stats), "asset token not found: " + to_string(quantity.symbid) );
-   check( to == stats.issuer, "tokens can only be issued to issuer account" );
-   require_auth( stats.issuer );
-  
-   check( quantity.symbid == stats.symbid, "symbol ID mismatch" );
-   check( quantity.amount > 0, "must issue positive quantity" );
-   check( quantity.amount <= stats.max_supply - stats.supply, "quantity exceeds available supply");
-
-   stats.supply += quantity.amount;
-   _db.set( stats );
-
-   add_balance( stats.issuer, quantity );
-}
-
-ACTION token::retire( const token_asset& quantity, const string& memo )
-{
-   auto symbid = quantity.symbid;
-   check( memo.size() <= 256, "memo has more than 256 bytes" );
-
-   auto token = tokenstats_t(symbid);
-   check( _db.get(token), "token asset not found: " + to_string(symbid) );
-
-   require_auth( token.issuer );
-   check( quantity.amount > 0, "must retire positive quantity" );
-   check( quantity.symbid == token.symbid, "symbol mismatch" );
-   token.supply -= quantity.amount;
-   _db.set( token );
-
-   sub_balance( token.issuer, quantity );
-}
-
-ACTION token::transfer( const name& from, const name& to, const token_asset& quantity, const string& memo ) {
-   check( from != to, "cannot transfer to self" );
-   require_auth( from );
-   check( is_account( to ), "to account does not exist");
-   auto symid = quantity.symbid;
-   auto token = tokenstats_t(symid);
-   check( _db.get(token), "token asset not found: " + to_string(symid) );
-
-   require_recipient( from );
-   require_recipient( to );
-
-   check( quantity.amount > 0, "must transfer positive quantity" );
-   check( quantity.symbid == token.symbid, "symbol mismatch" );
-   check( memo.size() <= 256, "memo has more than 256 bytes" );
-
-   sub_balance( from, quantity );
-   add_balance( to, quantity );
-}
-
-void token::add_balance( const name& owner, const token_asset& value ) {
-   auto to_acnt = account_t(value.symbid);
-   if (_db.get(owner.value, to_acnt)) {
-      to_acnt.balance += value;
-   } else {
-      to_acnt.balance = value;
-   }
-
-   _db.set( owner.value, to_acnt );
-}
-
-void token::sub_balance( const name& owner, const token_asset& value ) {
-   auto from_acnt = account_t(value.symbid);
-   check( _db.get(owner.value, from_acnt), "account balance not found" );
-   check( from_acnt.balance.amount >= value.amount, "overdrawn balance" );
-
-   from_acnt.balance -= value;
-   _db.set( owner.value, from_acnt );
-}
-
-ACTION token::setpowasset( const name& issuer, const uint64_t symbid, const pow_asset_meta& asset_meta) {
-   require_auth( issuer );
-   check( issuer == _gstate.admin, "non-admin issuer not allowed" );
-
-   auto stats = tokenstats_t(symbid);
-   check( _db.get(stats), "asset token not found: " + to_string(symbid) );
-
-   auto pow = pow_asset_t(symbid);
-   pow.asset_meta    = asset_meta;
-
-   _db.set( pow );
+[[eosio::on_notify("apollo.token::transfer")]]
+void mart::ontransfer(const name& from, const name& to, const token_asset& quantity,const string& memo){
+    
+    check( quantity.amount > 0, "quantity must be positive" );
+    check( get_first_receiver() == APOLLO_BANK, "must transfer by contract: " + APOLLO_BANK.to_string());
+    check( to == get_self() , "must transfer to mart contract");
+    sell_order_t::tbl_t token_tbl(get_self(), to.value);
+    auto apollo_token_itr = token_tbl.find( quantity.symbol.token_id );
+    if( apollo_token_itr == token_tbl.end() ){
+        token_tbl.emplace(get_self(),[&](auto& item){
+            //item.id =  quantity.symbol.token_id;
+            item.quantity = quantity;
+            item.electricity_fee = asset(0, symbol("CNYD",4));
+            item.price = asset(0, symbol("CNYD",4));
+            item.created_at = current_time_point();
+            item.updated_at = current_time_point();
+        });
+    } else {
+        token_tbl.modify( apollo_token_itr, get_self(), [&](auto& item ){
+            item.quantity += quantity;
+        });
+    }
 
 }
 
-} /// namespace apollo
+[[eosio::on_notify("cnyd.token::transfer")]] 
+void mart::buynft(name& from,name& to,asset& quantity,string& memo){
+     if( from == get_self() || to != get_self() ) return;
+     check( quantity.amount > 0, "quantity must be positive" );
+     //buy nft eg:"nft:1(nft id):50(nft quantity)"
+     vector<string_view> memo_params = split(memo, ":");
+     if( memo_params[0] == "nft" ){
+        auto param_nft_id = memo_params[1];
+        auto param_quantity = memo_params[2];
+        check(!param_nft_id.empty() , "param nft id is missing");
+        check(!param_quantity.empty(), "param nft quantity is missing");
+        sell_order_t::tbl_t token_tbl(get_self(), get_self().value);
+        auto nft_id = to_uint64(param_nft_id.data(),"nft_id");
+        check( nft_id != 0, "nft id can not be 0" );
+        auto nft_token_itr = token_tbl.find(nft_id);
+        check(nft_token_itr != token_tbl.end(),"nft token not found:"+to_string(nft_id));
+
+        auto nft_quantity = to_int64(param_quantity.data(),"nft_quantity");
+        check( nft_quantity > 0, "nft quantity can not be 0" );
+        check( quantity.symbol == CNYD_SYMBOL , "quantity symbol mismatch with cnyd symbol") ;
+        check( nft_token_itr->quantity.amount >= nft_quantity,"Insufficient stock of nft("+to_string(nft_id)+"), remaining quantity is "+to_string(nft_token_itr->quantity.amount) );
+        
+        int64_t total_electricity_price = multiply_i64(nft_quantity,nft_token_itr->electricity_fee.amount);
+        int64_t total_token_price = multiply_i64(nft_quantity,nft_token_itr->price.amount);
+        int64_t total_amount = total_electricity_price + total_token_price;
+        check(quantity.amount == total_amount , "insufficient amount");
+        
+        token_tbl.modify(nft_token_itr,get_self(),[&](auto& item){
+            item.quantity.amount -= nft_quantity;
+            if(item.quantity.amount == 0){
+                item.status = ORDER_STATUS_SELLOUT;
+            }
+        });
+
+        deal_t::tbl_t deal_tbl(get_self(), get_self().value);
+        auto deal_id = deal_tbl.available_primary_key();
+        deal_tbl.emplace(get_self(),[&](auto& item){
+            item.id = deal_id;
+            item.sell_token = nft_token_itr->quantity;
+            item.electricity_fee = nft_token_itr->electricity_fee;
+            item.token_price = nft_token_itr->price;
+            item.buy_quantity = nft_quantity;
+            item.pay_amount = quantity;
+            item.buyer = from;
+            item.discount = nft_token_itr->discount;
+            item.created_at = current_time_point();
+        });
+
+        
+        //transfer nft
+        auto transfer_nft = token_asset(nft_token_itr->quantity.symbol);
+        transfer_nft.amount = nft_quantity;
+        apollotoken::transfer_action(APOLLO_BANK, {{get_self(), active_permission}}).send(get_self(), from, transfer_nft, "nft transfer");
+        //recharge
+        auto recharge_asset = asset(total_electricity_price,CNYD_SYMBOL);
+        auto recharge_memo = "topup:"+from.to_string();
+        cnydtoken::transfer_action(CNYD_BANK, {{get_self(), active_permission}}).send(get_self(), VCOIN_CONTRACT, recharge_asset, recharge_memo);
+     }
+}
+
+[[eosio::action]] 
+void mart::updatetoken(const uint64_t& id,const asset& electricity_fee,const asset& token_price,const name& status,const name& sell_type,const uint8_t& discount){
+    //todo admin update
+    require_auth(get_self());
+    sell_order_t::tbl_t token_tbl(get_self(),get_self().value);
+    auto apollo_token_itr = token_tbl.find(id);
+    check( apollo_token_itr != token_tbl.end(),"token not found:"+to_string(id) );
+    check( electricity_fee.symbol == CNYD_SYMBOL , "electricity_fee symbol mismatch with cnyd symbol" );
+    check( electricity_fee.amount > 0 , "electricity_fee must be positive" );
+    check( token_price.symbol == CNYD_SYMBOL , "token_price symbol mismatch with cnyd symbol" );
+    check( token_price.amount > 0 , "token_price must be positive" );
+    check( discount > 0 && discount <= 100,"discount must be positive" );
+    token_tbl.modify(apollo_token_itr,get_self(),[&](auto& item){
+        item.electricity_fee = electricity_fee;
+        item.price = token_price;
+        item.status = status;
+        item.sell_type = sell_type;
+        item.discount = discount;
+        item.updated_at = current_time_point();
+    });
+}
+
+[[eosio::action]]
+void mart::updatestatus(const uint64_t& id,const name& status){
+    require_auth(get_self());
+    sell_order_t::tbl_t token_tbl(get_self(),get_self().value);
+    auto apollo_token_itr = token_tbl.find(id);
+    check(apollo_token_itr != token_tbl.end(),"token not found:"+to_string(id));
+    token_tbl.modify(apollo_token_itr,get_self(),[&](auto& item){
+        item.status = status;
+    });
+}
+
+
+
+

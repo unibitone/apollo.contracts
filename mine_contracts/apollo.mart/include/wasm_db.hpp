@@ -86,7 +86,7 @@ public:
             return return_t::APPENDED;
         }
     }
-
+    
     template<typename RecordType>
     void del(const RecordType& record) {
         auto scope = code.value;
