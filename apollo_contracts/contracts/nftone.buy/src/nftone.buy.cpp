@@ -57,7 +57,7 @@ using namespace std;
       CHECKC( quant.amount > 0, err::PARAM_ERROR, "non-positive quantity not allowed" )
       auto ask_price          = price_s(price, quant.symbol);
 
-      auto sellorders = sellorder_idx( _self, _self );
+      auto sellorders = sellorder_idx( _self, _self.value );
       _gstate.last_buy_order_idx ++;
       sellorders.emplace(_self, [&]( auto& row ) {
          row.id         =  _gstate.last_buy_order_idx;
@@ -77,7 +77,7 @@ using namespace std;
       CHECKC( begin_at < end_at, err::PARAM_ERROR, "begin is not greater than end" );
       CHECKC( fee.amount > 0, err::PARAM_ERROR, "non-positive quantity not allowed" );
 
-      auto orders       = sellorder_idx( _self, _self );
+      auto orders       = sellorder_idx( _self, _self.value );
       auto itr          = orders.find( order_id );
       CHECKC( itr != orders.end(), err::RECORD_NOT_FOUND, "order not found: " + to_string(order_id) )
 
@@ -132,7 +132,7 @@ using namespace std;
       CHECKC( count > 0, err::PARAM_ERROR, "non-positive count not allowed" )
       auto bought             = nasset(count, nsymb); //by buyer
 
-      auto orders             = sellorder_idx( _self, _self );
+      auto orders             = sellorder_idx( _self, _self.value );
       // memo one
       auto order_id           = stoi( string( params[1] ));
       auto itr                = orders.find( order_id );
@@ -179,7 +179,7 @@ using namespace std;
    void nftone_mart::cancelorder(const name& maker, const uint32_t& token_id, const uint64_t& order_id) {
       require_auth( maker );
 
-      auto orders = sellorder_idx(_self, _self);
+      auto orders = sellorder_idx(_self, _self.value);
       if (order_id != 0) {
          auto itr = orders.find( order_id );
          CHECKC( itr != orders.end(), err::RECORD_NOT_FOUND, "order not exit: " + to_string(order_id) + "@" + to_string(token_id) )
