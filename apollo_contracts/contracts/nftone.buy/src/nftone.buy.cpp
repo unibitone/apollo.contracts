@@ -57,7 +57,7 @@ using namespace std;
       CHECKC( quant.amount > 0, err::PARAM_ERROR, "non-positive quantity not allowed" )
       auto ask_price          = price_s(price, quant.symbol);
 
-      auto sellorders = sellorder_idx( _self, quant.symbol.id );
+      auto sellorders = sellorder_idx( _self, _self );
       _gstate.last_buy_order_idx ++;
       sellorders.emplace(_self, [&]( auto& row ) {
          row.id         =  _gstate.last_buy_order_idx;
@@ -69,18 +69,17 @@ using namespace std;
       });
    }
 
-   void nftone_mart::setorderfee(const uint64_t& order_id, const uint64_t& token_id,
-                           const time_point_sec& begin_at,
-                           const time_point_sec& end_at, 
+   void nftone_mart::setorderfee(const uint64_t& order_id, const time_point_sec& begin_at,
+                           const time_point_sec& end_at,
                            const asset& fee) {
       require_auth( _self );
       CHECKC( begin_at > current_time_point(), err::PARAM_ERROR, "current time is not greater than begin" );
       CHECKC( begin_at < end_at, err::PARAM_ERROR, "begin is not greater than end" );
       CHECKC( fee.amount > 0, err::PARAM_ERROR, "non-positive quantity not allowed" );
 
-      auto orders       = sellorder_idx( _self, token_id );
+      auto orders       = sellorder_idx( _self, _self );
       auto itr          = orders.find( order_id );
-      CHECKC( itr != orders.end(), err::RECORD_NOT_FOUND, "order not found: " + to_string(order_id) + "@" + to_string(token_id) )
+      CHECKC( itr != orders.end(), err::RECORD_NOT_FOUND, "order not found: " + to_string(order_id) )
 
       orders.modify(itr, same_payer, [&]( auto& row ) {
          row.begin_at    = begin_at;
@@ -133,7 +132,7 @@ using namespace std;
       CHECKC( count > 0, err::PARAM_ERROR, "non-positive count not allowed" )
       auto bought             = nasset(count, nsymb); //by buyer
 
-      auto orders             = sellorder_idx( _self, token_id );
+      auto orders             = sellorder_idx( _self, _self );
       // memo one
       auto order_id           = stoi( string( params[1] ));
       auto itr                = orders.find( order_id );
@@ -143,7 +142,7 @@ using namespace std;
       CHECKC( time_point_sec( current_time_point() ) > order.begin_at, err::TIME_EXPIRED, "There is no buying at this time" )
       CHECKC( time_point_sec( current_time_point() ) < order.end_at, err::TIME_EXPIRED, "There is no buying at this time" )
       CHECKC( count <= order.frozen, err::PARAM_ERROR, "count cannot exceed the remaining quantity" )
-   
+
       uint64_t need_amount = (order.price.value.amount + order.fee.amount) * count;
       CHECKC( need_amount > 0, err::PARAM_ERROR, "non-positive count not allowed" )
       CHECKC( quant.amount == need_amount, err::INCORRECT_AMOUNT, "incorrect amount" )
@@ -154,14 +153,14 @@ using namespace std;
       //send to seller for quote tokens
       TRANSFER_X( _gstate.bank_contract, order.maker, earned, "sell nft:" + to_string(bought.symbol.id) )
 
-      if ( order.frozen == 0 ) {
-         orders.erase( itr );
-      } else {
-         orders.modify(itr, same_payer, [&]( auto& row ) {
-            row.frozen = order.frozen;
-            row.updated_at = current_time_point();
-         });
-      }
+
+      orders.modify(itr, same_payer, [&]( auto& row ) {
+         row.frozen = order.frozen;
+         if(order.frozen == 0){
+            row.status = order_status::FINISHED;
+         }
+         row.updated_at = current_time_point();
+      });
 
       _on_deal_trace( order.id, 0, order.maker, from,
                      order.price, order.fee, count, current_time_point() );
@@ -180,7 +179,7 @@ using namespace std;
    void nftone_mart::cancelorder(const name& maker, const uint32_t& token_id, const uint64_t& order_id) {
       require_auth( maker );
 
-      auto orders = sellorder_idx(_self, token_id);
+      auto orders = sellorder_idx(_self, _self);
       if (order_id != 0) {
          auto itr = orders.find( order_id );
          CHECKC( itr != orders.end(), err::RECORD_NOT_FOUND, "order not exit: " + to_string(order_id) + "@" + to_string(token_id) )
@@ -189,14 +188,23 @@ using namespace std;
          auto nft_quant = nasset( itr->frozen, itr->price.symbol );
          vector<nasset> quants = { nft_quant };
          TRANSFER_N( NFT_BANK, itr->maker, quants, "nftone mart cancel" )
-         orders.erase( itr );
+
+         orders.modify(itr, same_payer, [&]( auto& row ) {
+            row.status = order_status::CANCELLED;
+            row.updated_at = current_time_point();
+         });
 
       } else {
          for (auto itr = orders.begin(); itr != orders.end(); itr++) {
             auto nft_quant = nasset( itr->frozen, itr->price.symbol );
             vector<nasset> quants = { nft_quant };
             TRANSFER_N( NFT_BANK, itr->maker, quants, "nftone mart cancel" )
-            orders.erase( itr );
+
+            orders.modify(itr, same_payer, [&]( auto& row ) {
+               row.status = order_status::CANCELLED;
+               row.updated_at = current_time_point();
+            });
+
          }
       }
    }

@@ -42,7 +42,6 @@ enum class err: uint8_t {
    INCORRECT_AMOUNT     = 19
 };
 
-
 /**
  * The `nftone.buy` sample system contract defines the structures and actions that allow users to create, issue, and manage tokens for AMAX based blockchains. It demonstrates one way to implement a smart contract which allows for creation and management of tokens. It is possible for one to create a similar contract which suits different needs. However, it is recommended that if one only needs a token with the below listed actions, that one uses the `nftone.buy` contract instead of developing their own.
  *
@@ -67,7 +66,7 @@ class [[eosio::contract("nftone.buy")]] nftone_mart : public contract {
    [[eosio::on_notify("amax.ntoken::transfer")]]
    void onselltransfer(const name& from, const name& to, const vector<nasset>& quants, const string& memo);
 
-   ACTION setorderfee(const uint64_t& order_id, const uint64_t& token_id, const time_point_sec& begin_at, const time_point_sec& end_at, const asset& fee);
+   ACTION setorderfee(const uint64_t& order_id, const time_point_sec& begin_at, const time_point_sec& end_at, const asset& fee);
 
    [[eosio::on_notify("cnyd.token::transfer")]]
    void onbuytransfercnyd(const name& from, const name& to, const asset& quant, const string& memo);

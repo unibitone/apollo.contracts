@@ -28,6 +28,13 @@ using namespace eosio;
 #define TBL struct [[eosio::table, eosio::contract("nftone.buy")]]
 #define NTBL(name) struct [[eosio::table(name), eosio::contract("nftone.buy")]]
 
+namespace order_status {
+    static constexpr eosio::name RUNNING     = "running"_n;
+    static constexpr eosio::name CANCELLED   = "cancelled"_n;
+    static constexpr eosio::name FINISHED    = "finished"_n;
+}
+
+
 NTBL("global") global_t {
     name admin;
     name fee_collector;
@@ -79,6 +86,7 @@ TBL order_t {
     int64_t         total;
     asset           fee;
     name            maker;
+    name            status = order_status::RUNNING;
     time_point_sec  begin_at;
     time_point_sec  end_at;
     time_point_sec  created_at;
@@ -95,7 +103,7 @@ TBL order_t {
     uint128_t by_maker_large_price_first()const { return (uint128_t) maker.value << 64 | (uint128_t) (std::numeric_limits<uint64_t>::max() - price.value.amount ); }
     uint128_t by_maker_created_at()const { return (uint128_t) maker.value << 64 | (uint128_t) created_at.sec_since_epoch(); }
 
-    EOSLIB_SERIALIZE( order_t, (id)(price)(frozen)(total)(fee)(maker)(begin_at)(end_at)(created_at)(updated_at) )
+    EOSLIB_SERIALIZE( order_t, (id)(price)(frozen)(total)(fee)(maker)(status)(begin_at)(end_at)(created_at)(updated_at) )
 
 };
 
