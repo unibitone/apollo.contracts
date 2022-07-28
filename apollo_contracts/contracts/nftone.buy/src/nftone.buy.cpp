@@ -139,6 +139,7 @@ using namespace std;
       CHECKC( itr != orders.end(), err::RECORD_NOT_FOUND, "order not found: " + to_string(order_id) + "@" + to_string(token_id) )
 
       auto order = *itr;
+      CHECKC( order.status == order_status::RUNNING, err::UNAVAILABLE_PURCHASE, "NFT are temporarily unavailable for purchase"  )
       CHECKC( time_point_sec( current_time_point() ) > order.begin_at, err::TIME_EXPIRED, "There is no buying at this time" )
       CHECKC( time_point_sec( current_time_point() ) < order.end_at, err::TIME_EXPIRED, "There is no buying at this time" )
       CHECKC( count <= order.frozen, err::PARAM_ERROR, "count cannot exceed the remaining quantity" )

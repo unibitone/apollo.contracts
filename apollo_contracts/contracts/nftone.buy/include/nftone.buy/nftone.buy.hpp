@@ -39,7 +39,9 @@ enum class err: uint8_t {
    FEE_INSUFFICIENT     = 16,
    FIRST_CREATOR        = 17,
    STATUS_ERROR         = 18,
-   INCORRECT_AMOUNT     = 19
+   INCORRECT_AMOUNT     = 19,
+   UNAVAILABLE_PURCHASE = 20
+
 };
 
 /**
