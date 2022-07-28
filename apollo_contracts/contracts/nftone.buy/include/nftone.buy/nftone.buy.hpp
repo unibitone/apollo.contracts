@@ -16,7 +16,7 @@ using std::vector;
 
 using namespace eosio;
 
-static constexpr name      NFT_BANK    = "amax.ntoken"_n;
+static constexpr name      NFT_BANK    = "amax.qtoken"_n;
 static constexpr name      CNYD_BANK   = "cnyd.token"_n;
 static constexpr symbol    CNYD        = symbol(symbol_code("CNYD"), 4);
 
@@ -64,7 +64,7 @@ class [[eosio::contract("nftone.buy")]] nftone_mart : public contract {
 
     ~nftone_mart() { _global.set( _gstate, get_self() ); }
 
-   [[eosio::on_notify("amax.ntoken::transfer")]]
+   [[eosio::on_notify("amax.qtoken::transfer")]]
    void onselltransfer(const name& from, const name& to, const vector<nasset>& quants, const string& memo);
 
    ACTION setorderfee(const uint64_t& order_id, const uint64_t& token_id, const time_point_sec& begin_at, const time_point_sec& end_at, const asset& fee);
