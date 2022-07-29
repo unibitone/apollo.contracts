@@ -44,11 +44,10 @@ NTBL("global") global_t {
     float notary_fee_rate   = 0.0;
     eosio::symbol           pay_symbol;
     name                    bank_contract;
-    uint64_t last_buy_order_idx = 0;
-    uint64_t last_deal_idx      = 0;
+    uint64_t last_sell_order_idx = 0;
 
     EOSLIB_SERIALIZE( global_t, (admin)(fee_collector)(fee_rate)(creator_fee_rate)(ipowner_fee_rate)
-                                (notary_fee_rate)(pay_symbol)(bank_contract)(last_buy_order_idx)(last_deal_idx) )
+                                (notary_fee_rate)(pay_symbol)(bank_contract)(last_sell_order_idx) )
 
 };
 typedef eosio::singleton< "global"_n, global_t > global_singleton;
@@ -105,37 +104,6 @@ TBL order_t {
 
     EOSLIB_SERIALIZE( order_t, (id)(price)(frozen)(total)(fee)(maker)(status)(begin_at)(end_at)(created_at)(updated_at) )
 
-};
-
-TBL buyer_bid_t {
-    uint64_t        id;
-    uint64_t        sell_order_id;
-    price_s         price;
-    asset           frozen; //CNYD
-    name            buyer;
-    time_point_sec  created_at;
-
-    buyer_bid_t() {}
-    buyer_bid_t(const uint64_t& i): id(i) {}
-
-    uint64_t primary_key()const { return id; }
-
-    uint64_t by_large_price_first()const { return( std::numeric_limits<uint64_t>::max() - price.value.amount ); }
-
-    checksum256 by_buyer_created_at()const { return make256key( sell_order_id,
-                                                                buyer.value,
-                                                                created_at.sec_since_epoch(),
-                                                                id); }
-    uint64_t by_sell_order_id()const { return sell_order_id; }
-
-    EOSLIB_SERIALIZE( buyer_bid_t, (id)(sell_order_id)(price)(frozen)(buyer)(created_at) )
-
-    typedef eosio::multi_index
-    < "buyerbids"_n,  buyer_bid_t,
-        indexed_by<"priceidx"_n,        const_mem_fun<buyer_bid_t, uint64_t, &buyer_bid_t::by_large_price_first> >,
-        indexed_by<"sellorderidx"_n,    const_mem_fun<buyer_bid_t, uint64_t, &buyer_bid_t::by_sell_order_id> >,
-        indexed_by<"createidx"_n,       const_mem_fun<buyer_bid_t, checksum256, &buyer_bid_t::by_buyer_created_at> >
-    > idx_t;
 };
 
 
