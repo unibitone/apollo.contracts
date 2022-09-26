@@ -20,11 +20,14 @@ using namespace wasm::db;
 static constexpr name      NFT_BANK    = "amax.ntoken"_n;
 static constexpr name      CNYD_BANK   = "cnyd.token"_n;
 static constexpr symbol    CNYD        = symbol(symbol_code("CNYD"), 4);
+static constexpr uint16_t  PCT_BOOST   = 10000;
+static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
 
 enum class err: uint8_t {
    NONE                 = 0,
    RECORD_NOT_FOUND     = 1,
    RECORD_EXISTING      = 2,
+   CONTRACT_MISMATCH    = 3,
    SYMBOL_MISMATCH      = 4,
    PARAM_ERROR          = 5,
    MEMO_FORMAT_ERROR    = 6,
@@ -72,7 +75,7 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
    ACTION init(eosio::symbol symbol, name bank_contract);
    ACTION setplan(const uint64_t& plan_id, const plan_conf_s& pc);
    ACTION delplan(const uint64_t& plan_id);
-   ACTION withdraw(const name& issuer, const name& owner);
+   ACTION withdraw(const name& issuer, const name& owner, const uint64_t& plan_id);
    ACTION collectint(const name& issuer, const name& owner);
    ACTION splitshare(const name& issuer, const name& owner);
 
@@ -82,7 +85,6 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
       dbc                  _db;
 
    private:
-
-
+     
 };
 } //namespace amax

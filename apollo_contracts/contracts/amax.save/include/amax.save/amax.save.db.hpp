@@ -41,36 +41,31 @@ NTBL("global") global_t {
 typedef eosio::singleton< "global"_n, global_t > global_singleton;
 
 struct plan_conf_s {
+    name                type = deposit_type::TERM;  // term | demand
     extended_symbol     principal_token;            //E.g. 8,AMAX@amax.token
     extended_symbol     interest_token;             //E.g. 8,AMAX@amax.token
     uint64_t            deposit_term_days;          //E.g. 365
     bool                allow_advance_redeem;
     uint64_t            advance_redeem_fine_rate;   //E.g. 50% * 10000 = 5000
-    map<uint64_t, uint64_t> interest_rates;
     time_point_sec      effective_from;             //before which deposits are not allowed
     time_point_sec      effective_to;               //after which deposits are not allowed but penalty split are allowed
-};
 
-struct plan_info_s {
-    name                type = deposit_type::TERM;  // term | demand
-    plan_conf_s         plan_conf;
-    extended_asset      deposit_available;          //deposited by users
-    extended_asset      deposit_redeemed;
-    extended_asset      interest_available;         //refuel by admin
-    extended_asset      interest_redeemed;
-    extended_asset      penalty_available;          //contributed by advanced deposit redeemers 
-    extended_asset      penalty_redeemed; 
-
-    EOSLIB_SERIALIZE( plan_info_s,  (type)(plan_conf)
-                                    (deposit_available)(deposit_redeemed)
-                                    (interest_available)(interest_redeemed)
-                                    (penalty_available)(penalty_redeemed) )
+    EOSLIB_SERIALIZE( plan_conf_s,  (type)(principal_token)(interest_token)(deposit_term_days)
+                                    (allow_advance_redeem)(advance_redeem_fine_rate)
+                                    (effective_from)(effective_to) )
 };
 
 //scope: self
 TBL save_plan_t {
     uint64_t            id;                         //PK
-    plan_info_s         plan_info;
+    plan_conf_s         plan_conf;
+
+    asset               deposit_available;          //deposited by users
+    asset               deposit_redeemed;
+    asset               interest_available;         //refuel by admin
+    asset               interest_redeemed;
+    asset               penalty_available;          //contributed by advanced deposit redeemers 
+    asset               penalty_redeemed; 
     time_point_sec      created_at;
 
     save_plan_t() {}
@@ -81,7 +76,11 @@ TBL save_plan_t {
 
     typedef multi_index<"saveplans"_n, save_plan_t > tbl_t;
 
-    EOSLIB_SERIALIZE( save_plan_t,  (id)(plan_info)(created_at) )
+    EOSLIB_SERIALIZE( save_plan_t,  (id)(plan_conf)
+                                    (deposit_available)(deposit_redeemed)
+                                    (interest_available)(interest_redeemed)
+                                    (penalty_available)(penalty_redeemed)
+                                    (created_at) )
     
 };
 
@@ -89,6 +88,7 @@ TBL save_plan_t {
 TBL save_account_t {
     uint64_t            id;                 //PK
     uint64_t            plan_id;
+    uint64_t            interest_rate;      //boost by 10000
     asset               deposit_quant;
     asset               total_interest_collected;
     time_point_sec      created_at;
@@ -104,7 +104,7 @@ TBL save_account_t {
         indexed_by<"planid"_n, const_mem_fun<save_account_t, uint64_t, &save_account_t::by_plan> >
     > tbl_t;
 
-    EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(deposit_quant)(total_interest_collected)
+    EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(interest_rate)(deposit_quant)(total_interest_collected)
                                         (created_at)(updated_at) )
 
 };
