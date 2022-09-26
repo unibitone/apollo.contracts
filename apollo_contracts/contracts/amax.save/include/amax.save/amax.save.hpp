@@ -37,7 +37,7 @@ enum class err: uint8_t {
    NOT_STARTED          = 10,
    OVERSIZED            = 11,
    TIME_EXPIRED         = 12,
-   NOTIFY_UNRELATED     = 13,
+   TIME_PREMATURE       = 13,
    ACTION_REDUNDANT     = 14,
    ACCOUNT_INVALID      = 15,
    FEE_INSUFFICIENT     = 16,
@@ -76,7 +76,7 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
    ACTION setplan(const uint64_t& plan_id, const plan_conf_s& pc);
    ACTION delplan(const uint64_t& plan_id);
    ACTION withdraw(const name& issuer, const name& owner, const uint64_t& plan_id);
-   ACTION collectint(const name& issuer, const name& owner);
+   ACTION collectint(const name& issuer, const name& owner, const uint64_t& save_id);
    ACTION splitshare(const name& issuer, const name& owner);
 
    private:

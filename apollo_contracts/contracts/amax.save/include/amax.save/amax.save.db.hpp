@@ -85,14 +85,15 @@ TBL save_plan_t {
 };
 
 //Scope: account
+//Note: record will be deleted upon withdrawal/redemption
 TBL save_account_t {
     uint64_t            id;                 //PK
     uint64_t            plan_id;
     uint64_t            interest_rate;      //boost by 10000
     asset               deposit_quant;
-    asset               total_interest_collected;
+    asset               interest_collected;
     time_point_sec      created_at;
-    time_point_sec      updated_at;
+    time_point_sec      last_collected_at;
 
     save_account_t() {}
     save_account_t(const uint64_t& i): id(i) {}
@@ -104,8 +105,8 @@ TBL save_account_t {
         indexed_by<"planid"_n, const_mem_fun<save_account_t, uint64_t, &save_account_t::by_plan> >
     > tbl_t;
 
-    EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(interest_rate)(deposit_quant)(total_interest_collected)
-                                        (created_at)(updated_at) )
+    EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(interest_rate)(deposit_quant)(interest_collected)
+                                        (created_at)(last_collected_at) )
 
 };
 

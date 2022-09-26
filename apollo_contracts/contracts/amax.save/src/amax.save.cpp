@@ -77,7 +77,37 @@ using namespace wasm::safemath;
       }
    }
 
-   void amax_save::collectint(const name& issuer, const name& owner) {
+   void amax_save::collectint(const name& issuer, const name& owner, const uint64_t& save_id) {
+      require_auth( issuer );
+      if ( issuer != owner ) {
+         CHECKC( issuer == _gstate.admin, err::NO_AUTH, "non-admin not allowed to collect others saving interest" )
+      }
+
+      auto save_acct = save_account_t( save_id );
+      CHECKC( _db.get( owner.value, save_acct ), err::RECORD_NOT_FOUND, "account save not found" )
+
+      auto plan = save_plan_t( save_acct.plan_id );
+      CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string(save_acct.plan_id) )
+
+      //interest_rate_ = interest_rate * ( (now - deposited_at) / day_secs / 365 )
+      auto now                = current_time_point();
+      auto elapsed_sec        = now.sec_since_epoch() - save_acct.created_at.sec_since_epoch();
+      CHECKC( elapsed_sec > DAY_SECONDS, err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
+      auto finish_rate        = div( div( elapsed_sec, DAY_SECONDS, PCT_BOOST ), 365, 1 );
+      auto interest_due_rate  = mul( save_acct.interest_rate, finish_rate, PCT_BOOST );
+      auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, get_precision(save_acct.deposit_quant) );
+      auto interest           = asset( interest_amount, plan.plan_conf.interest_token.get_symbol() );
+      auto interest_due       = interest - save_acct.interest_collected;
+
+      TRANSFER( plan.plan_conf.interest_token.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
+      
+      save_acct.interest_collected += interest_due;
+      save_acct.last_collected_at   = now;
+      _db.set( save_acct );
+
+      plan.interest_available -= interest_due;
+      plan.interest_redeemed += interest_due;
+      _db.set( plan );
 
    }
 
@@ -92,6 +122,7 @@ using namespace wasm::safemath;
     * @param to
     * @param quantity
     * @param memo: two formats:
+    *       0) <NULL>               -- by saver to deposit to plan_id=1
     *       1) refuel:$plan_id      -- by admin to deposit interest quantity
     *       2) deposit:$plan_id     -- by saver to deposit saving quantity to his or her own account
     *
@@ -102,10 +133,9 @@ using namespace wasm::safemath;
       if (from == get_self() || to != get_self()) return;
 
       auto token_bank = get_first_receiver();
-      CHECKC( memo != "", err::MEMO_FORMAT_ERROR, "empty memo!" )
+     
       vector<string_view> memo_params = split(memo, ":");
-
-      if( memo_params[0] == "refuel" ) {
+      if( memo_params.size() == 2 && memo_params[0] == "refuel" ) {
          auto plan_id = to_uint64(memo_params[1], "refuel plan");
          auto plan = save_plan_t( plan_id );
          CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan id not found: " + to_string( plan_id ) )
@@ -116,7 +146,7 @@ using namespace wasm::safemath;
 
       } else {
          uint64_t plan_id = 1;   //default 1st-plan 
-         if (memo_params[0] == "deposit")
+         if (memo_params.size() == 2 && memo_params[0] == "deposit")
             plan_id = to_uint64(memo_params[1], "deposit plan");
 
          auto plan = save_plan_t( plan_id );
@@ -130,7 +160,7 @@ using namespace wasm::safemath;
          auto save_acct             = save_account_t( accts.available_primary_key() );
          save_acct.interest_rate    = get_interest_rate( quant.amount / get_precision(quant) ); 
          save_acct.deposit_quant    = quant;
-         save_acct.total_interest_collected = asset( 0, plan.plan_conf.interest_token.get_symbol() );
+         save_acct.interest_collected = asset( 0, plan.plan_conf.interest_token.get_symbol() );
          save_acct.created_at       = current_time_point();
 
       }
