@@ -72,7 +72,7 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
    [[eosio::on_notify("*::transfer")]]
    void ontransfer(const name& from, const name& to, const asset& quants, const string& memo);
 
-   ACTION init(eosio::symbol symbol, name bank_contract);
+   ACTION init();
    ACTION setplan(const uint64_t& plan_id, const plan_conf_s& pc);
    ACTION delplan(const uint64_t& plan_id);
    ACTION withdraw(const name& issuer, const name& owner, const uint64_t& plan_id);

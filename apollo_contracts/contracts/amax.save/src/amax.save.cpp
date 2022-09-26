@@ -31,7 +31,7 @@ using namespace wasm::safemath;
                                        return 1200;   //0.12 * 10000
    }
 
-   void amax_save::init(eosio::symbol pay_symbol, name bank_contract) {
+   void amax_save::init() {
       CHECK(false, "not allowed" )
       require_auth( _self );
       
