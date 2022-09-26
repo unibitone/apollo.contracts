@@ -8,13 +8,14 @@
 #include <string>
 
 #include <amax.save/amax.save.db.hpp>
-
+#include <wasm_db.hpp>
 namespace amax {
 
 using std::string;
 using std::vector;
 
 using namespace eosio;
+using namespace wasm::db;
 
 static constexpr name      NFT_BANK    = "amax.ntoken"_n;
 static constexpr name      CNYD_BANK   = "cnyd.token"_n;
@@ -69,10 +70,16 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
    void ontransfer(const name& from, const name& to, const asset& quants, const string& memo);
 
    ACTION init(eosio::symbol symbol, name bank_contract);
+   ACTION setplan(const uint64_t& plan_id, const plan_conf_s& pc);
+   ACTION delplan(const uint64_t& plan_id);
+   ACTION withdraw(const name& issuer, const name& owner);
+   ACTION collectint(const name& issuer, const name& owner);
+   ACTION splitshare(const name& issuer, const name& owner);
 
    private:
-      global_singleton    _global;
-      global_t            _gstate;
+      global_singleton     _global;
+      global_t             _gstate;
+      dbc                  _db;
 
    private:
 
