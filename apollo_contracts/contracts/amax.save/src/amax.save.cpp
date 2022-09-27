@@ -143,6 +143,9 @@ using namespace wasm::safemath;
       CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string(save_acct.plan_id) )
 
       //interest_rate_ = interest_rate * ( (now - deposited_at) / day_secs / 365 )
+      if (save_acct.last_collected_at == time_point())
+         save_acct.last_collected_at = save_acct.created_at;
+
       auto now                = current_time_point();
       auto elapsed_sec        = now.sec_since_epoch() - save_acct.last_collected_at.sec_since_epoch();
       CHECKC( elapsed_sec > DAY_SECONDS, err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
@@ -215,7 +218,7 @@ using namespace wasm::safemath;
          CHECKC( plan.conf.effective_from <= now, err::PLAN_INEFFECTIVE, "plan not effective yet" )
          CHECKC( plan.conf.effective_to   >= now, err::PLAN_INEFFECTIVE, "plan expired already" )
 
-         plan.deposit_available     += quant;
+         plan.deposit_available        += quant;
          _db.set( plan );
 
          auto accts                    = save_account_t::tbl_t(_self, from.value);
