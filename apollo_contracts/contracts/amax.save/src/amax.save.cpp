@@ -227,7 +227,8 @@ using namespace wasm::safemath;
          save_acct.interest_term_quant = asset(0, plan.conf.interest_token.get_symbol()); _term_interest( save_acct.interest_rate, quant, save_acct.interest_term_quant );
          save_acct.deposit_quant       = quant;
          save_acct.interest_collected  = asset( 0, plan.conf.interest_token.get_symbol() );
-         save_acct.created_at          = current_time_point();
+         save_acct.created_at          = now;
+         save_acct.term_ended_at       = now + microseconds( plan.conf.deposit_term_days * DAY_SECONDS );
 
          _db.set( save_acct );
       }

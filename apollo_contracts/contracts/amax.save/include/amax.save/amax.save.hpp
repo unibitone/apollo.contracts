@@ -63,7 +63,7 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
       using contract::contract;
 
    amax_save(eosio::name receiver, eosio::name code, datastream<const char*> ds): contract(receiver, code, ds),
-        _global(get_self(), get_self().value)
+        _global(get_self(), get_self().value), _db(_self)
     {
         _gstate = _global.exists() ? _global.get() : global_t{};
     }

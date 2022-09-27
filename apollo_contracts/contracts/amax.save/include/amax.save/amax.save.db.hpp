@@ -118,7 +118,7 @@ TBL save_account_t {
     > tbl_t;
 
     EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(interest_rate)(deposit_quant)(interest_term_quant)(interest_collected)
-                                        (created_at)(last_collected_at) )
+                                        (created_at)(term_ended_at)(last_collected_at) )
 
 };
 

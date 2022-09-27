@@ -100,16 +100,7 @@ public:
 
     template<typename RecordType>
     return_t set(const RecordType& record) {
-        auto scope = code.value;
-
-        typename RecordType::tbl_t idx(code, scope);
-        auto itr = idx.find( record.primary_key() );
-        check( itr != idx.end(), "record not found" );
-
-        idx.modify( itr, same_payer, [&]( auto& item ) {
-            item = record;
-        });
-        return return_t::MODIFIED;
+       return set(record, code);
     }
 
     template<typename RecordType>
