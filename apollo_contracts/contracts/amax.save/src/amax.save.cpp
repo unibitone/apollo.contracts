@@ -200,10 +200,13 @@ using namespace wasm::safemath;
          if (memo_params.size() == 2 && memo_params[0] == "deposit")
             plan_id = to_uint64(memo_params[1], "deposit plan");
 
+         auto now = current_time_point();
          auto plan = save_plan_t( plan_id );
          CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan id not found: " + to_string( plan_id ) )
          CHECKC( plan.conf.principal_token.get_contract() == token_bank, err::CONTRACT_MISMATCH, "deposit token contract mismatches" )
-
+         CHECKC( plan.conf.effective_from <= now, err::PLAN_INEFFECTIVE, "plan not effective yet" )
+         CHECKC( plan.conf.effective_to   >= now, err::PLAN_INEFFECTIVE, "plan expired already" )
+         
          plan.deposit_available     += quant;
          _db.set( plan );
 

@@ -42,7 +42,7 @@ enum class err: uint8_t {
    ACTION_REDUNDANT     = 14,
    ACCOUNT_INVALID      = 15,
    FEE_INSUFFICIENT     = 16,
-   FIRST_CREATOR        = 17,
+   PLAN_INEFFECTIVE     = 17,
    STATUS_ERROR         = 18,
    INCORRECT_AMOUNT     = 19,
    UNAVAILABLE_PURCHASE = 20
