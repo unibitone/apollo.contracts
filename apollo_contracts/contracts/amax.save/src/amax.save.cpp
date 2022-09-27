@@ -165,7 +165,7 @@ using namespace wasm::safemath;
       
       save_acct.interest_collected  += interest_due;
       save_acct.last_collected_at   = now;
-      _db.set( save_acct );
+      _db.set( owner.value, save_acct );
 
       plan.interest_available       -= interest_due;
       plan.interest_redeemed        += interest_due;
@@ -237,7 +237,7 @@ using namespace wasm::safemath;
          save_acct.created_at          = now;
          save_acct.term_ended_at       = now + plan.conf.deposit_term_days * DAY_SECONDS;
 
-         _db.set( save_acct );
+         _db.set( from.value, save_acct, false );
       }
    }
 
