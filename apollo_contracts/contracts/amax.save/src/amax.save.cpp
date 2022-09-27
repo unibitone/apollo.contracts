@@ -32,13 +32,13 @@ using namespace wasm::safemath;
    }
 
    inline uint64_t get_ir_dm1() {
-      return 100; //0.01
+      return 100; // 1%
    }
    inline uint64_t get_ir_dm2() {
-      return 200; //0.01
+      return 200; // 2%
    }
    inline uint64_t get_ir_dm3() {
-      return 300; //0.01
+      return 300; // 3%
    }
 
    inline uint64_t get_interest_rate( const name& ir_scheme, const uint64_t& deposit_amount ) {
