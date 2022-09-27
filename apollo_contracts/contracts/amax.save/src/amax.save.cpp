@@ -101,30 +101,29 @@ using namespace wasm::safemath;
       auto plan = save_plan_t( save_acct.plan_id );
       CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string(save_acct.plan_id) )
 
+      auto redeem_quant             = save_acct.deposit_quant;
       if (plan.conf.type == deposit_type::TERM) {
-         auto save_termed_at = save_acct.created_at + plan.conf.deposit_term_days;
+         auto save_termed_at        = save_acct.created_at + plan.conf.deposit_term_days;
          auto now = current_time_point();
          auto premature_withdraw = (now.sec_since_epoch() < save_termed_at.sec_since_epoch());
          if (!plan.conf.allow_advance_redeem)
             CHECKC( !premature_withdraw, err::NO_AUTH, "premature withdraw not allowed" )
 
          if (premature_withdraw) {
-            auto token_precision = get_precision(save_acct.deposit_quant);
-            auto unfinish_rate   = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
-            auto penalty_amount  = mul( mul( save_acct.deposit_quant.amount, unfinish_rate, PCT_BOOST ), plan.conf.advance_redeem_fine_rate, PCT_BOOST );
-            auto penalty         = asset( penalty_amount, plan.conf.principal_token.get_symbol() );
-            
-            plan.penalty_available += penalty;
-            _db.set( plan );
-            _db.del( save_acct );
-
-            auto quant           = save_acct.deposit_quant - penalty;
-            TRANSFER( plan.conf.principal_token.get_contract(), owner, quant, "withdraw: " + to_string(save_id) )
+            auto unfinish_rate      = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
+            auto penalty_amount     = mul( mul( save_acct.deposit_quant.amount, unfinish_rate, PCT_BOOST ), plan.conf.advance_redeem_fine_rate, PCT_BOOST );
+            auto penalty            = asset( penalty_amount, plan.conf.principal_token.get_symbol() );
+            plan.penalty_available  += penalty;
+            redeem_quant            -= penalty;
          }
-      } else {
-         auto quant           = save_acct.deposit_quant;
-         TRANSFER( plan.conf.principal_token.get_contract(), owner, quant, "withdraw: " + to_string(save_id) )
       }
+
+      plan.deposit_available        -= save_acct.deposit_quant;
+      plan.deposit_redeemed         += redeem_quant;
+      _db.set( plan );
+      _db.del( save_acct );
+
+      TRANSFER( plan.conf.principal_token.get_contract(), owner, redeem_quant, "redeem: " + to_string(save_id) )
    }
 
    void amax_save::collectint(const name& issuer, const name& owner, const uint64_t& save_id) {
