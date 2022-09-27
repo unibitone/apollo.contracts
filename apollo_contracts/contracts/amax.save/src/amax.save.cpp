@@ -150,7 +150,7 @@ using namespace wasm::safemath;
       auto elapsed_sec        = now.sec_since_epoch() - save_acct.last_collected_at.sec_since_epoch();
       CHECKC( elapsed_sec > DAY_SECONDS, err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
       auto total_elapsed_sec  = now.sec_since_epoch() - save_acct.created_at.sec_since_epoch();
-      auto finish_rate        = div( div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), 365, 1 );
+      auto finish_rate        = div( div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), plan.conf.deposit_term_days, 1 );
       auto interest_due_rate  = mul( save_acct.interest_rate, finish_rate, PCT_BOOST );
       auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, PCT_BOOST );
       auto interest           = asset( interest_amount, plan.conf.interest_token.get_symbol() );
