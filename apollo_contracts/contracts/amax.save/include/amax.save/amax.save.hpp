@@ -85,7 +85,5 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
       global_t             _gstate;
       dbc                  _db;
 
-   private:
-     
 };
 } //namespace amax

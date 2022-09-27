@@ -107,7 +107,7 @@ using namespace wasm::safemath;
 
       auto redeem_quant             = save_acct.deposit_quant;
       if (plan.conf.type == deposit_type::TERM) {
-         auto save_termed_at        = save_acct.created_at + plan.conf.deposit_term_days;
+         auto save_termed_at        = save_acct.created_at + plan.conf.deposit_term_days * DAY_SECONDS;
          auto now = current_time_point();
          auto premature_withdraw = (now.sec_since_epoch() < save_termed_at.sec_since_epoch());
          if (!plan.conf.allow_advance_redeem)
@@ -211,7 +211,7 @@ using namespace wasm::safemath;
          if (memo_params.size() == 2 && memo_params[0] == "deposit")
             plan_id = to_uint64(memo_params[1], "deposit plan");
 
-         auto now = current_time_point();
+         auto now = time_point_sec(current_time_point());
          auto plan = save_plan_t( plan_id );
          CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan id not found: " + to_string( plan_id ) )
          CHECKC( plan.conf.principal_token.get_contract() == token_bank, err::CONTRACT_MISMATCH, "deposit token contract mismatches" )
@@ -228,7 +228,7 @@ using namespace wasm::safemath;
          save_acct.deposit_quant       = quant;
          save_acct.interest_collected  = asset( 0, plan.conf.interest_token.get_symbol() );
          save_acct.created_at          = now;
-         save_acct.term_ended_at       = now + microseconds( plan.conf.deposit_term_days * DAY_SECONDS );
+         save_acct.term_ended_at       = now + plan.conf.deposit_term_days * DAY_SECONDS;
 
          _db.set( save_acct );
       }
