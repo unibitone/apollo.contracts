@@ -77,7 +77,7 @@ using namespace wasm::safemath;
 
       auto plan = save_plan_t(1);
       _db.get( plan );
-      plan.conf          = pc;
+      plan.conf               = pc;
       plan.deposit_available  = zero_pricipal;
       plan.deposit_redeemed   = zero_pricipal;
       plan.interest_available = zero_interest;
@@ -146,18 +146,19 @@ using namespace wasm::safemath;
       CHECKC( elapsed_sec > DAY_SECONDS, err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
       auto finish_rate        = div( div( elapsed_sec, DAY_SECONDS, PCT_BOOST ), 365, 1 );
       auto interest_due_rate  = mul( save_acct.interest_rate, finish_rate, PCT_BOOST );
-      auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, get_precision(save_acct.deposit_quant) );
+      auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, PCT_BOOST );
       auto interest           = asset( interest_amount, plan.conf.interest_token.get_symbol() );
       auto interest_due       = interest - save_acct.interest_collected;
 
+      CHECKC( interest_due.amount > 0, err::NOT_POSITIVE, "interest amount is zero" )
       TRANSFER( plan.conf.interest_token.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
       
-      save_acct.interest_collected += interest_due;
+      save_acct.interest_collected  += interest_due;
       save_acct.last_collected_at   = now;
       _db.set( save_acct );
 
-      plan.interest_available -= interest_due;
-      plan.interest_redeemed += interest_due;
+      plan.interest_available       -= interest_due;
+      plan.interest_redeemed        += interest_due;
       _db.set( plan );
 
    }
@@ -206,7 +207,7 @@ using namespace wasm::safemath;
          CHECKC( plan.conf.principal_token.get_contract() == token_bank, err::CONTRACT_MISMATCH, "deposit token contract mismatches" )
          CHECKC( plan.conf.effective_from <= now, err::PLAN_INEFFECTIVE, "plan not effective yet" )
          CHECKC( plan.conf.effective_to   >= now, err::PLAN_INEFFECTIVE, "plan expired already" )
-         
+
          plan.deposit_available     += quant;
          _db.set( plan );
 
