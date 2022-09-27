@@ -134,7 +134,7 @@ public:
     }
 
     template<typename RecordType>
-    void del_scope(const uint64_t& scope, const RecordType& record) {
+    void del(const uint64_t& scope, const RecordType& record) {
         typename RecordType::tbl_t idx(code, scope);
         auto itr = idx.find(record.primary_key());
         if ( itr != idx.end() ) {

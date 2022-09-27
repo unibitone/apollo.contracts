@@ -125,7 +125,7 @@ using namespace wasm::safemath;
       plan.deposit_available        -= save_acct.deposit_quant;
       plan.deposit_redeemed         += redeem_quant;
       _db.set( plan );
-      _db.del( save_acct );
+      _db.del( owner.value, save_acct );
 
       TRANSFER( plan.conf.principal_token.get_contract(), owner, redeem_quant, "redeem: " + to_string(save_id) )
    }
