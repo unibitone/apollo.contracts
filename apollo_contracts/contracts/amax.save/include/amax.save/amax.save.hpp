@@ -78,7 +78,7 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
    ACTION delplan(const uint64_t& plan_id);
    ACTION withdraw(const name& issuer, const name& owner, const uint64_t& plan_id);
    ACTION collectint(const name& issuer, const name& owner, const uint64_t& save_id);
-   ACTION splitshare(const name& issuer, const name& owner);
+   ACTION splitshare(const name& issuer, const name& owner, const uint64_t& plan_id);
 
    private:
       global_singleton     _global;

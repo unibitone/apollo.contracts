@@ -173,7 +173,13 @@ using namespace wasm::safemath;
 
    }
 
-   void amax_save::splitshare(const name& issuer, const name& owner) {
+   void amax_save::splitshare(const name& issuer, const name& owner, const uint64_t& plan_id) {
+      require_auth( issuer );
+      if ( issuer != owner ) {
+         CHECKC( issuer == _gstate.admin, err::NO_AUTH, "non-admin not allowed to trigger split others share" )
+      }
+
+
 
    }
 
@@ -223,6 +229,7 @@ using namespace wasm::safemath;
 
          // auto accts                    = save_account_t::tbl_t(_self, from.value);
          auto save_acct                = save_account_t( ++_gstate.last_save_id );
+         save_acct.plan_id             = plan_id;
          save_acct.interest_rate       = get_interest_rate( plan.conf.ir_scheme, quant.amount / get_precision(quant) ); 
          save_acct.interest_term_quant = asset(0, plan.conf.interest_token.get_symbol()); _term_interest( save_acct.interest_rate, quant, save_acct.interest_term_quant );
          save_acct.deposit_quant       = quant;
