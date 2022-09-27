@@ -25,17 +25,66 @@ using namespace wasm::safemath;
       return get_precision(a.symbol);
    }
 
-   inline uint64_t get_interest_rate( const uint64_t& deposit_amount ) {
-         if( deposit_amount <= 1000 )  return 800;    //0.08 * 10000
-         if( deposit_amount <= 2000 )  return 1000;   // 0.1 * 10000
-                                       return 1200;   //0.12 * 10000
+   inline uint64_t get_ir_ladder1( const uint64_t& deposit_amount ) {
+      if( deposit_amount <= 1000 )  return 800;    //0.08 * 10000
+      if( deposit_amount <= 2000 )  return 1000;   // 0.1 * 10000
+                                    return 1200;   //0.12 * 10000
    }
 
+   inline uint64_t get_ir_dm1() {
+      return 100; //0.01
+   }
+   inline uint64_t get_ir_dm2() {
+      return 200; //0.01
+   }
+   inline uint64_t get_ir_dm3() {
+      return 300; //0.01
+   }
+
+   inline uint64_t get_interest_rate( const name& ir_scheme, const uint64_t& deposit_amount ) {
+      switch( ir_scheme.value ) {
+         case interest_rate_scheme::LADDER1.value : return get_ir_ladder1(deposit_amount);
+         case interest_rate_scheme::DEMAND1.value : return get_ir_dm1();
+         default: return get_ir_dm1();
+      }
+   }
+   
    void amax_save::init() {
-      CHECK(false, "not allowed" )
+      // CHECK(false, "not allowed" )
       require_auth( _self );
       
       // _gstate.admin                 = "armoniaadmin"_n;
+      auto ext_symb = extended_symbol(AMAX, SYS_BANK);
+      auto from = time_point_sec(1664246887); //::from_iso_string("2022-09-27T02:48:07+00:00");)
+      auto to = time_point_sec(1666810087); //::from_iso_string("2022-10-27T00:00:00");
+
+      auto pc = plan_conf_s {
+         deposit_type::TERM,
+         interest_rate_scheme::LADDER1,
+         ext_symb,
+         ext_symb,
+         365,
+         true,
+         5000,
+         from,
+         to
+      };
+
+      auto zero_pricipal = asset(0, pc.principal_token.get_symbol());
+      auto zero_interest = asset(0, pc.interest_token.get_symbol());
+
+      auto plan = save_plan_t(1);
+      _db.get( plan );
+      plan.conf          = pc;
+      plan.deposit_available  = zero_pricipal;
+      plan.deposit_redeemed   = zero_pricipal;
+      plan.interest_available = zero_interest;
+      plan.interest_redeemed  = zero_interest;
+      plan.penalty_available  = zero_pricipal;
+      plan.penalty_redeemed   = zero_pricipal;
+      plan.created_at         = current_time_point();
+      _db.set( plan );
+
    }
 
    void amax_save::withdraw(const name& issuer, const name& owner, const uint64_t& save_id) {
@@ -50,30 +99,30 @@ using namespace wasm::safemath;
       auto plan = save_plan_t( save_acct.plan_id );
       CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string(save_acct.plan_id) )
 
-      if (plan.plan_conf.type == deposit_type::TERM) {
-         auto save_termed_at = save_acct.created_at + plan.plan_conf.deposit_term_days;
+      if (plan.conf.type == deposit_type::TERM) {
+         auto save_termed_at = save_acct.created_at + plan.conf.deposit_term_days;
          auto now = current_time_point();
          auto premature_withdraw = (now.sec_since_epoch() < save_termed_at.sec_since_epoch());
-         if (!plan.plan_conf.allow_advance_redeem)
+         if (!plan.conf.allow_advance_redeem)
             CHECKC( !premature_withdraw, err::NO_AUTH, "premature withdraw not allowed" )
 
          if (premature_withdraw) {
             auto token_precision = get_precision(save_acct.deposit_quant);
-            auto unfinish_rate   = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.plan_conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
+            auto unfinish_rate   = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
             auto penalty_amount  = div( mul( mul( save_acct.deposit_quant.amount, unfinish_rate, token_precision ),
-                                        plan.plan_conf.advance_redeem_fine_rate, PCT_BOOST ), PCT_BOOST, token_precision );
-            auto penalty         = asset( penalty_amount, plan.plan_conf.principal_token.get_symbol() );
+                                        plan.conf.advance_redeem_fine_rate, PCT_BOOST ), PCT_BOOST, token_precision );
+            auto penalty         = asset( penalty_amount, plan.conf.principal_token.get_symbol() );
             
             plan.penalty_available += penalty;
             _db.set( plan );
             _db.del( save_acct );
 
             auto quant           = save_acct.deposit_quant - penalty;
-            TRANSFER( plan.plan_conf.principal_token.get_contract(), owner, quant, "withdraw: " + to_string(save_id) )
+            TRANSFER( plan.conf.principal_token.get_contract(), owner, quant, "withdraw: " + to_string(save_id) )
          }
       } else {
          auto quant           = save_acct.deposit_quant;
-         TRANSFER( plan.plan_conf.principal_token.get_contract(), owner, quant, "withdraw: " + to_string(save_id) )
+         TRANSFER( plan.conf.principal_token.get_contract(), owner, quant, "withdraw: " + to_string(save_id) )
       }
    }
 
@@ -91,15 +140,15 @@ using namespace wasm::safemath;
 
       //interest_rate_ = interest_rate * ( (now - deposited_at) / day_secs / 365 )
       auto now                = current_time_point();
-      auto elapsed_sec        = now.sec_since_epoch() - save_acct.created_at.sec_since_epoch();
+      auto elapsed_sec        = now.sec_since_epoch() - save_acct.last_collected_at.sec_since_epoch();
       CHECKC( elapsed_sec > DAY_SECONDS, err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
       auto finish_rate        = div( div( elapsed_sec, DAY_SECONDS, PCT_BOOST ), 365, 1 );
       auto interest_due_rate  = mul( save_acct.interest_rate, finish_rate, PCT_BOOST );
       auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, get_precision(save_acct.deposit_quant) );
-      auto interest           = asset( interest_amount, plan.plan_conf.interest_token.get_symbol() );
+      auto interest           = asset( interest_amount, plan.conf.interest_token.get_symbol() );
       auto interest_due       = interest - save_acct.interest_collected;
 
-      TRANSFER( plan.plan_conf.interest_token.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
+      TRANSFER( plan.conf.interest_token.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
       
       save_acct.interest_collected += interest_due;
       save_acct.last_collected_at   = now;
@@ -139,7 +188,7 @@ using namespace wasm::safemath;
          auto plan_id = to_uint64(memo_params[1], "refuel plan");
          auto plan = save_plan_t( plan_id );
          CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan id not found: " + to_string( plan_id ) )
-         CHECKC( plan.plan_conf.interest_token.get_contract() == token_bank, err::CONTRACT_MISMATCH, "interest token contract mismatches" )
+         CHECKC( plan.conf.interest_token.get_contract() == token_bank, err::CONTRACT_MISMATCH, "interest token contract mismatches" )
 
          plan.interest_available += quant;
          _db.set( plan );
@@ -151,16 +200,16 @@ using namespace wasm::safemath;
 
          auto plan = save_plan_t( plan_id );
          CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan id not found: " + to_string( plan_id ) )
-         CHECKC( plan.plan_conf.principal_token.get_contract() == token_bank, err::CONTRACT_MISMATCH, "deposit token contract mismatches" )
+         CHECKC( plan.conf.principal_token.get_contract() == token_bank, err::CONTRACT_MISMATCH, "deposit token contract mismatches" )
 
          plan.deposit_available     += quant;
          _db.set( plan );
 
          auto accts                 = save_account_t::tbl_t(_self, from.value);
          auto save_acct             = save_account_t( accts.available_primary_key() );
-         save_acct.interest_rate    = get_interest_rate( quant.amount / get_precision(quant) ); 
+         save_acct.interest_rate    = get_interest_rate( plan.conf.ir_scheme, quant.amount / get_precision(quant) ); 
          save_acct.deposit_quant    = quant;
-         save_acct.interest_collected = asset( 0, plan.plan_conf.interest_token.get_symbol() );
+         save_acct.interest_collected = asset( 0, plan.conf.interest_token.get_symbol() );
          save_acct.created_at       = current_time_point();
 
       }
@@ -172,12 +221,12 @@ using namespace wasm::safemath;
       auto plan = save_plan_t(pid);
       bool plan_existing = _db.get( plan );
 
-      plan.plan_conf.principal_token        = pc.principal_token;
-      plan.plan_conf.interest_token         = pc.interest_token;
-      plan.plan_conf.deposit_term_days      = pc.deposit_term_days;
-      plan.plan_conf.allow_advance_redeem   = pc.allow_advance_redeem;
-      plan.plan_conf.effective_from         = pc.effective_from;
-      plan.plan_conf.effective_to           = pc.effective_to;
+      plan.conf.principal_token        = pc.principal_token;
+      plan.conf.interest_token         = pc.interest_token;
+      plan.conf.deposit_term_days      = pc.deposit_term_days;
+      plan.conf.allow_advance_redeem   = pc.allow_advance_redeem;
+      plan.conf.effective_from         = pc.effective_from;
+      plan.conf.effective_to           = pc.effective_to;
 
       if (!plan_existing) plan.created_at   = current_time_point();
 

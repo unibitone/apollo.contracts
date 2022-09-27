@@ -17,7 +17,8 @@ using std::vector;
 using namespace eosio;
 using namespace wasm::db;
 
-static constexpr name      NFT_BANK    = "amax.ntoken"_n;
+static constexpr name      SYS_BANK    = "amax.token"_n;
+static constexpr symbol    AMAX        = symbol(symbol_code("AMAX"), 8);
 static constexpr name      CNYD_BANK   = "cnyd.token"_n;
 static constexpr symbol    CNYD        = symbol(symbol_code("CNYD"), 4);
 static constexpr uint16_t  PCT_BOOST   = 10000;
