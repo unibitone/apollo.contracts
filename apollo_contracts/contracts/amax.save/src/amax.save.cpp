@@ -51,6 +51,10 @@ using namespace wasm::safemath;
       }
    }
    
+   inline void _term_interest( const uint64_t interest_rate, const asset& deposit_quant, asset& interest ) {
+      interest.amount = mul( interest_rate, deposit_quant.amount, PCT_BOOST );
+   }
+
    void amax_save::init() {
       // CHECK(false, "not allowed" )
       require_auth( _self );
@@ -142,10 +146,15 @@ using namespace wasm::safemath;
       auto now                = current_time_point();
       auto elapsed_sec        = now.sec_since_epoch() - save_acct.last_collected_at.sec_since_epoch();
       CHECKC( elapsed_sec > DAY_SECONDS, err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
+      auto total_elapsed_sec  = now.sec_since_epoch() - save_acct.created_at.sec_since_epoch();
+
       auto finish_rate        = div( div( elapsed_sec, DAY_SECONDS, PCT_BOOST ), 365, 1 );
       auto interest_due_rate  = mul( save_acct.interest_rate, finish_rate, PCT_BOOST );
       auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, PCT_BOOST );
       auto interest           = asset( interest_amount, plan.conf.interest_token.get_symbol() );
+      if (interest > save_acct.interest_term_quant) 
+         interest = save_acct.interest_term_quant;
+
       auto interest_due       = interest - save_acct.interest_collected;
 
       CHECKC( interest_due.amount > 0, err::NOT_POSITIVE, "interest amount is zero" )
@@ -209,13 +218,15 @@ using namespace wasm::safemath;
          plan.deposit_available     += quant;
          _db.set( plan );
 
-         auto accts                 = save_account_t::tbl_t(_self, from.value);
-         auto save_acct             = save_account_t( accts.available_primary_key() );
-         save_acct.interest_rate    = get_interest_rate( plan.conf.ir_scheme, quant.amount / get_precision(quant) ); 
-         save_acct.deposit_quant    = quant;
-         save_acct.interest_collected = asset( 0, plan.conf.interest_token.get_symbol() );
-         save_acct.created_at       = current_time_point();
+         auto accts                    = save_account_t::tbl_t(_self, from.value);
+         auto save_acct                = save_account_t( accts.available_primary_key() );
+         save_acct.interest_rate       = get_interest_rate( plan.conf.ir_scheme, quant.amount / get_precision(quant) ); 
+         save_acct.interest_term_quant = asset(0, plan.conf.interest_token.get_symbol()); _term_interest( save_acct.interest_rate, quant, save_acct.interest_term_quant );
+         save_acct.deposit_quant       = quant;
+         save_acct.interest_collected  = asset( 0, plan.conf.interest_token.get_symbol() );
+         save_acct.created_at          = current_time_point();
 
+         _db.set( save_acct );
       }
    }
 

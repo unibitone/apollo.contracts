@@ -100,6 +100,7 @@ TBL save_account_t {
     uint64_t            plan_id;
     uint64_t            interest_rate;      //boost by 10000
     asset               deposit_quant;
+    asset               interest_term_quant;  //total interest collectable upon term completion
     asset               interest_collected;
     time_point_sec      created_at;
     time_point_sec      term_ended_at;
@@ -115,7 +116,7 @@ TBL save_account_t {
         indexed_by<"planid"_n, const_mem_fun<save_account_t, uint64_t, &save_account_t::by_plan> >
     > tbl_t;
 
-    EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(interest_rate)(deposit_quant)(interest_collected)
+    EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(interest_rate)(deposit_quant)(interest_term_quant)(interest_collected)
                                         (created_at)(last_collected_at) )
 
 };
