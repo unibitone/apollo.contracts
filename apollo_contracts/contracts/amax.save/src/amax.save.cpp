@@ -86,8 +86,6 @@ using namespace wasm::safemath;
       plan.deposit_redeemed   = zero_pricipal;
       plan.interest_available = zero_interest;
       plan.interest_redeemed  = zero_interest;
-      plan.penalty_available  = zero_pricipal;
-      plan.penalty_redeemed   = zero_pricipal;
       plan.created_at         = current_time_point();
       _db.set( plan );
 
@@ -117,8 +115,9 @@ using namespace wasm::safemath;
             auto unfinish_rate      = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
             auto penalty_amount     = mul( mul( save_acct.deposit_quant.amount, unfinish_rate, PCT_BOOST ), plan.conf.advance_redeem_fine_rate, PCT_BOOST );
             auto penalty            = asset( penalty_amount, plan.conf.principal_token.get_symbol() );
-            plan.penalty_available  += penalty;
             redeem_quant            -= penalty;
+
+            TRANSFER( plan.conf.principal_token.get_contract(), _gstate.penalty_share_account, penalty, owner.to_string() + ":" + to_string(_gstate.split_share_id) )
          }
       }
 
@@ -172,15 +171,6 @@ using namespace wasm::safemath;
 
    }
 
-   void amax_save::splitshare(const name& issuer, const name& owner, const uint64_t& plan_id) {
-      require_auth( issuer );
-      if ( issuer != owner ) {
-         CHECKC( issuer == _gstate.admin, err::NO_AUTH, "non-admin not allowed to trigger split others share" )
-      }
-
-
-
-   }
 
    /**
     * @brief send nasset tokens into nftone marketplace
@@ -253,7 +243,8 @@ using namespace wasm::safemath;
       plan.conf.effective_from         = pc.effective_from;
       plan.conf.effective_to           = pc.effective_to;
 
-      if (!plan_existing) plan.created_at   = current_time_point();
+      if (!plan_existing) 
+         plan.created_at               = current_time_point();
 
       _db.set( plan );
    }

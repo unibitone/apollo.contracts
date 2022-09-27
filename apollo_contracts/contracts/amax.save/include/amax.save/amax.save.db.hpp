@@ -42,6 +42,8 @@ namespace interest_rate_scheme {
 
 NTBL("global") global_t {
     name admin                              = "armoniaadmin"_n;
+    name penalty_share_account              = "amax.share"_n;
+    uint64_t split_share_id                 = 0;    //to be set a value which has been set for this contract as a whole
     uint64_t last_save_id                   = 0;
 
     EOSLIB_SERIALIZE( global_t, (admin)(last_save_id) )
@@ -74,8 +76,6 @@ TBL save_plan_t {
     asset               deposit_redeemed;
     asset               interest_available;         //refuel by admin
     asset               interest_redeemed;
-    asset               penalty_available;          //contributed by advanced deposit redeemers 
-    asset               penalty_redeemed; 
     time_point_sec      created_at;
 
     save_plan_t() {}
@@ -89,7 +89,6 @@ TBL save_plan_t {
     EOSLIB_SERIALIZE( save_plan_t,  (id)(conf)
                                     (deposit_available)(deposit_redeemed)
                                     (interest_available)(interest_redeemed)
-                                    (penalty_available)(penalty_redeemed)
                                     (created_at) )
     
 };
