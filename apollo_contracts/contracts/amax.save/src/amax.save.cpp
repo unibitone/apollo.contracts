@@ -159,7 +159,7 @@ using namespace wasm::safemath;
 
       auto interest_due       = interest - save_acct.interest_collected;
 
-      CHECKC( interest_due.amount > 0, err::NOT_POSITIVE, "interest amount is zero" )
+      CHECKC( interest_due.amount > 0, err::NOT_POSITIVE, "interest due amount is zero" )
       TRANSFER( plan.conf.interest_token.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
       
       save_acct.interest_collected  += interest_due;
