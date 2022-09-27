@@ -221,8 +221,8 @@ using namespace wasm::safemath;
          plan.deposit_available        += quant;
          _db.set( plan );
 
-         auto accts                    = save_account_t::tbl_t(_self, from.value);
-         auto save_acct                = save_account_t( accts.available_primary_key() );
+         // auto accts                    = save_account_t::tbl_t(_self, from.value);
+         auto save_acct                = save_account_t( ++_gstate.last_save_id );
          save_acct.interest_rate       = get_interest_rate( plan.conf.ir_scheme, quant.amount / get_precision(quant) ); 
          save_acct.interest_term_quant = asset(0, plan.conf.interest_token.get_symbol()); _term_interest( save_acct.interest_rate, quant, save_acct.interest_term_quant );
          save_acct.deposit_quant       = quant;

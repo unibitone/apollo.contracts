@@ -42,8 +42,9 @@ namespace interest_rate_scheme {
 
 NTBL("global") global_t {
     name admin                              = "armoniaadmin"_n;
+    uint64_t last_save_id                   = 0;
 
-    EOSLIB_SERIALIZE( global_t, (admin) )
+    EOSLIB_SERIALIZE( global_t, (admin)(last_save_id) )
 
 };
 typedef eosio::singleton< "global"_n, global_t > global_singleton;
