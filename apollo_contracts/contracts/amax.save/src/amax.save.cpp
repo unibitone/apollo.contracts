@@ -111,8 +111,7 @@ using namespace wasm::safemath;
          if (premature_withdraw) {
             auto token_precision = get_precision(save_acct.deposit_quant);
             auto unfinish_rate   = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
-            auto penalty_amount  = div( mul( mul( save_acct.deposit_quant.amount, unfinish_rate, token_precision ),
-                                        plan.conf.advance_redeem_fine_rate, PCT_BOOST ), PCT_BOOST, token_precision );
+            auto penalty_amount  = mul( mul( save_acct.deposit_quant.amount, unfinish_rate, PCT_BOOST ), plan.conf.advance_redeem_fine_rate, PCT_BOOST );
             auto penalty         = asset( penalty_amount, plan.conf.principal_token.get_symbol() );
             
             plan.penalty_available += penalty;
