@@ -45,7 +45,9 @@ using namespace wasm::safemath;
       switch( ir_scheme.value ) {
          case interest_rate_scheme::LADDER1.value : return get_ir_ladder1(deposit_amount);
          case interest_rate_scheme::DEMAND1.value : return get_ir_dm1();
-         default: return get_ir_dm1();
+         case interest_rate_scheme::DEMAND2.value : return get_ir_dm2();
+         case interest_rate_scheme::DEMAND3.value : return get_ir_dm3();
+         default:                                   return get_ir_dm1();
       }
    }
    
