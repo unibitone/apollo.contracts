@@ -8,7 +8,7 @@
 #include <string>
 
 #include <amax.share/amax.share.db.hpp>
-#include <wasm_db.hpp>
+
 namespace amax {
 
 using std::string;
@@ -77,7 +77,7 @@ class [[eosio::contract("amax.share")]] amax_share : public contract {
    ACTION setpool(const uint64_t& pool_id);
    ACTION delpool(const uint64_t& pool_id);
    ACTION addshare(const name& issuer, const name& owner, const uint64_t& pool_id, const asset& quant);
-   ACTION claimshare(const name& issuer, const name& owner, const uint64_t& save_id); 
+   ACTION claimshare(const name& issuer, const name& owner, const uint64_t& pool_id); 
  
    private:
       global_singleton     _global;

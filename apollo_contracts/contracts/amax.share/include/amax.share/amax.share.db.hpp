@@ -7,6 +7,7 @@
 #include <eosio/time.hpp>
 
 #include <utils.hpp>
+#include <wasm_db.hpp>
 
 // #include <deque>
 #include <optional>
@@ -14,7 +15,6 @@
 #include <map>
 #include <set>
 #include <type_traits>
-
 
 
 namespace amax {
@@ -40,9 +40,12 @@ TBL share_pool_t {
     uint64_t            id;                         //PK
     name                share_admin;                //contract or admin user
     extended_symbol     share_token;                //E.g. 8,AMAX@amax.token
-    asset               total_share;                //deposited by users
+    asset               total_reward;
+    asset               total_share;                //sum of shares by users
     asset               total_claimed;
     time_point_sec      created_at;
+    time_point_sec      opened_at;                  // 1970 means not opened
+    time_point_sec      ended_at;                   // 1970 means not ended
 
     share_pool_t() {}
     share_pool_t(const uint64_t& i): id(i) {}
@@ -56,7 +59,8 @@ TBL share_pool_t {
         indexed_by<"shareadmin"_n, const_mem_fun<share_pool_t, uint64_t, &share_pool_t::by_share_admin> >
      > tbl_t;
 
-    EOSLIB_SERIALIZE( share_pool_t, (id)(share_admin)(share_token)(total_share)(total_claimed)(created_at) )
+    EOSLIB_SERIALIZE( share_pool_t, (id)(share_admin)(share_token)(total_reward)(total_share)(total_claimed)
+                                    (created_at)(opened_at)(opened_at)(ended_at) )
     
 };
 
