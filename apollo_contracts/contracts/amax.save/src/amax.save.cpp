@@ -115,6 +115,8 @@ using namespace wasm::safemath;
             auto unfinish_rate      = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
             auto penalty_amount     = mul( mul( save_acct.deposit_quant.amount, unfinish_rate, PCT_BOOST ), plan.conf.advance_redeem_fine_rate, PCT_BOOST );
             auto penalty            = asset( penalty_amount, plan.conf.principal_token.get_symbol() );
+           
+            CHECKC( (redeem_quant.amount - penalty.amount) > 0 , err::INCORRECT_AMOUNT, "penalty amount error" )
             redeem_quant            -= penalty;
 
             TRANSFER( plan.conf.principal_token.get_contract(), _gstate.penalty_share_account, penalty, owner.to_string() + ":" + to_string(_gstate.split_share_id) )
@@ -165,8 +167,11 @@ using namespace wasm::safemath;
       save_acct.last_collected_at   = now;
       _db.set( owner.value, save_acct );
 
+      CHECKC( (plan.interest_available.amount - interest_due.amount) >= 0, err::NOT_POSITIVE, "interest due amount is zero" )
+
       plan.interest_available       -= interest_due;
       plan.interest_redeemed        += interest_due;
+
       _db.set( plan );
 
    }
@@ -236,10 +241,14 @@ using namespace wasm::safemath;
       auto plan = save_plan_t(pid);
       bool plan_existing = _db.get( plan );
 
+      plan.conf.type                   = pc.type;
+      plan.conf.ir_scheme              = pc.ir_scheme;
+
       plan.conf.principal_token        = pc.principal_token;
       plan.conf.interest_token         = pc.interest_token;
       plan.conf.deposit_term_days      = pc.deposit_term_days;
       plan.conf.allow_advance_redeem   = pc.allow_advance_redeem;
+      plan.conf.advance_redeem_fine_rate = pc.advance_redeem_fine_rate;
       plan.conf.effective_from         = pc.effective_from;
       plan.conf.effective_to           = pc.effective_to;
 
