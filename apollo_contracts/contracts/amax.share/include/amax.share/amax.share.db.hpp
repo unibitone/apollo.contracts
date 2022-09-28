@@ -60,7 +60,7 @@ TBL share_pool_t {
      > tbl_t;
 
     EOSLIB_SERIALIZE( share_pool_t, (id)(share_admin)(share_token)(total_reward)(total_share)(total_claimed)
-                                    (created_at)(opened_at)(opened_at)(ended_at) )
+                                    (created_at)(opened_at)(ended_at) )
     
 };
 

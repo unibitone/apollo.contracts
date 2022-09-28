@@ -115,11 +115,10 @@ using namespace wasm::safemath;
             auto unfinish_rate      = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
             auto penalty_amount     = mul( mul( save_acct.deposit_quant.amount, unfinish_rate, PCT_BOOST ), plan.conf.advance_redeem_fine_rate, PCT_BOOST );
             auto penalty            = asset( penalty_amount, plan.conf.principal_token.get_symbol() );
-           
-            CHECKC( (redeem_quant.amount - penalty.amount) > 0 , err::INCORRECT_AMOUNT, "penalty amount error" )
             redeem_quant            -= penalty;
+            CHECKC( redeem_quant.amount > 0, err::INCORRECT_AMOUNT, "redeem amount not positive " )
 
-            TRANSFER( plan.conf.principal_token.get_contract(), _gstate.penalty_share_account, penalty, owner.to_string() + ":" + to_string(_gstate.split_share_id) )
+            TRANSFER( plan.conf.principal_token.get_contract(), _gstate.penalty_share_account, penalty, owner.to_string() + ":" + to_string(_gstate.share_pool_id) )
          }
       }
 
@@ -233,6 +232,7 @@ using namespace wasm::safemath;
 
          _db.set( from.value, save_acct, false );
       }
+      //TODO call addshare
    }
 
    void amax_save::setplan(const uint64_t& pid, const plan_conf_s& pc) {
@@ -261,7 +261,7 @@ using namespace wasm::safemath;
          plan.interest_redeemed        = zero_interest;
          plan.created_at               = current_time_point();
       }
-      
+
       _db.set( plan );
    }
 

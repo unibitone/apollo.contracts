@@ -43,7 +43,7 @@ namespace interest_rate_scheme {
 NTBL("global") global_t {
     name admin                              = "armoniaadmin"_n;
     name penalty_share_account              = "amax.share"_n;
-    uint64_t split_share_id                 = 0;    //to be set a value which has been set for this contract as a whole
+    uint64_t share_pool_id                  = 0;    //to be set a value which has been set for this contract as a whole
     uint64_t last_save_id                   = 0;
 
     EOSLIB_SERIALIZE( global_t, (admin)(last_save_id) )
