@@ -252,9 +252,16 @@ using namespace wasm::safemath;
       plan.conf.effective_from         = pc.effective_from;
       plan.conf.effective_to           = pc.effective_to;
 
-      if (!plan_existing) 
+      if (!plan_existing) {
+         auto zero_pricipal            = asset(0, pc.principal_token.get_symbol());
+         auto zero_interest            = asset(0, pc.interest_token.get_symbol());
+         plan.deposit_available        = zero_pricipal;
+         plan.deposit_redeemed         = zero_pricipal;
+         plan.interest_available       = zero_interest;
+         plan.interest_redeemed        = zero_interest;
          plan.created_at               = current_time_point();
-
+      }
+      
       _db.set( plan );
    }
 
