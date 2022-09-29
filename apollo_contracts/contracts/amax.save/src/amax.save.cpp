@@ -166,7 +166,7 @@ using namespace wasm::safemath;
       save_acct.last_collected_at   = now;
       _db.set( owner.value, save_acct );
 
-      CHECKC( (plan.interest_available.amount - interest_due.amount) >= 0, err::NOT_POSITIVE, "interest due amount is zero" )
+      CHECKC( plan.interest_available > interest_due, err::NOT_POSITIVE, "insufficient available interest to collect" )
 
       plan.interest_available       -= interest_due;
       plan.interest_redeemed        += interest_due;
