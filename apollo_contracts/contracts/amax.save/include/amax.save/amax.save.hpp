@@ -79,11 +79,11 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
    ACTION withdraw(const name& issuer, const name& owner, const uint64_t& save_id);
    ACTION collectint(const name& issuer, const name& owner, const uint64_t& save_id);
 
-   ACTION refuellog(const name& refueller,const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
-   using refuellog_action = eosio::action_wrapper<"refuellog"_n, &amax_save::refuellog>; 
+   ACTION intrefuellog(const name& refueller,const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
+   using intrefuellog_action = eosio::action_wrapper<"intrefuellog"_n, &amax_save::intrefuellog>; 
 
-   ACTION intrtwdlog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
-   using interest_withdraw_log_action = eosio::action_wrapper<"intrtwdlog"_n, &amax_save::intrtwdlog>; 
+   ACTION intcolllog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
+   using interest_withdraw_log_action = eosio::action_wrapper<"intcolllog"_n, &amax_save::intcolllog>; 
 
    private:
       global_singleton     _global;
@@ -91,9 +91,9 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
       dbc                  _db;
 
 
-      void _on_refuel_log(const name& refueller, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
+      void _int_refuel_log(const name& refueller, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
 
-      void _on_intrtwd_log(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
+      void _int_coll_log(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
 
 };
 } //namespace amax
