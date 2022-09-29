@@ -175,7 +175,7 @@ using namespace wasm::safemath;
 
       _db.set( plan );
 
-      _int_coll_log(owner, save_acct.id, plan.id, interest_due,  time_point_sec( current_time_point() ));
+      _int_coll_log(owner, save_acct.save_id, plan.id, interest_due,  time_point_sec( current_time_point() ));
 
    }
 
