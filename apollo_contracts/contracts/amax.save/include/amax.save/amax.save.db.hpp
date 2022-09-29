@@ -43,10 +43,13 @@ namespace interest_rate_scheme {
 NTBL("global") global_t {
     name admin                              = "armoniaadmin"_n;
     name penalty_share_account              = "amax.share"_n;
+    extended_symbol     principal_token;            //E.g. 8,AMAX@amax.token, can be set differently for diff contract
+    extended_symbol     interest_token;             //E.g. 8,AMAX@amax.token, can be set differently for diff contract
     uint64_t share_pool_id                  = 0;    //to be set a value which has been set for this contract as a whole
     uint64_t last_save_id                   = 0;
 
-    EOSLIB_SERIALIZE( global_t, (admin)(last_save_id) )
+    EOSLIB_SERIALIZE( global_t, (admin)(penalty_share_account)(principal_token)(interest_token)
+                                (share_pool_id)(last_save_id) )
 
 };
 typedef eosio::singleton< "global"_n, global_t > global_singleton;
@@ -54,15 +57,13 @@ typedef eosio::singleton< "global"_n, global_t > global_singleton;
 struct plan_conf_s {
     name                type;
     name                ir_scheme;
-    extended_symbol     principal_token;            //E.g. 8,AMAX@amax.token
-    extended_symbol     interest_token;             //E.g. 8,AMAX@amax.token
     uint64_t            deposit_term_days;          //E.g. 365
     bool                allow_advance_redeem;
     uint64_t            advance_redeem_fine_rate;   //E.g. 50% * 10000 = 5000
     time_point_sec      effective_from;             //before which deposits are not allowed
     time_point_sec      effective_to;               //after which deposits are not allowed but penalty split are allowed
 
-    EOSLIB_SERIALIZE( plan_conf_s,  (type)(ir_scheme)(principal_token)(interest_token)(deposit_term_days)
+    EOSLIB_SERIALIZE( plan_conf_s,  (type)(ir_scheme)(deposit_term_days)
                                     (allow_advance_redeem)(advance_redeem_fine_rate)
                                     (effective_from)(effective_to) )
 };
