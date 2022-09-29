@@ -76,13 +76,24 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
    ACTION init();
    ACTION setplan(const uint64_t& plan_id, const plan_conf_s& pc);
    ACTION delplan(const uint64_t& plan_id);
-   ACTION withdraw(const name& issuer, const name& owner, const uint64_t& plan_id);
+   ACTION withdraw(const name& issuer, const name& owner, const uint64_t& save_id);
    ACTION collectint(const name& issuer, const name& owner, const uint64_t& save_id);
+
+   ACTION refuellog(const name& refueller,const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
+   using refuellog_action = eosio::action_wrapper<"refuellog"_n, &amax_save::refuellog>; 
+
+   ACTION intrtwdlog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
+   using interest_withdraw_log_action = eosio::action_wrapper<"intrtwdlog"_n, &amax_save::intrtwdlog>; 
 
    private:
       global_singleton     _global;
       global_t             _gstate;
       dbc                  _db;
+
+
+      void _on_refuel_log(const name& refueller, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
+
+      void _on_intrtwd_log(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
 
 };
 } //namespace amax

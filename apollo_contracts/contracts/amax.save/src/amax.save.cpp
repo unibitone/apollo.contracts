@@ -173,6 +173,8 @@ using namespace wasm::safemath;
 
       _db.set( plan );
 
+      _on_intrtwd_log(owner, save_acct.id, plan.id, interest_due,  time_point_sec( current_time_point() ));
+
    }
 
 
@@ -204,6 +206,7 @@ using namespace wasm::safemath;
 
          plan.interest_available += quant;
          _db.set( plan );
+         _on_refuel_log(from, plan_id, quant, current_time_point());
 
       } else {
          uint64_t plan_id = 1;   //default 1st-plan 
@@ -231,8 +234,8 @@ using namespace wasm::safemath;
          save_acct.term_ended_at       = now + plan.conf.deposit_term_days * DAY_SECONDS;
 
          _db.set( from.value, save_acct, false );
+         //TODO call addshare
       }
-      //TODO call addshare
    }
 
    void amax_save::setplan(const uint64_t& pid, const plan_conf_s& pc) {
@@ -272,6 +275,26 @@ using namespace wasm::safemath;
       CHECKC(_db.get( plan ), err::RECORD_NOT_FOUND, "plan not exist: " + to_string(pid) )
 
       _db.del( plan );
+   }
+
+   void amax_save::_on_intrtwd_log(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
+      amax_save::interest_withdraw_log_action act{ _self, { {_self, active_permission} } };
+      act.send( account, account_id, plan_id, quantity, created_at );
+   }
+
+   void amax_save::_on_refuel_log(const name& refueler, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
+      amax_save::refuellog_action act{ _self, { {_self, active_permission} } };
+      act.send( refueler, plan_id, quantity, created_at );
+   }
+
+   void amax_save::refuellog(const name& refueler, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
+      require_auth(get_self());
+      require_recipient(refueler);
+   }
+
+   void amax_save::intrtwdlog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
+      require_auth(get_self());
+      require_recipient(account);
    }
 
 } //namespace amax
