@@ -73,7 +73,7 @@ using namespace wasm::safemath;
    //    };
 
    void amax_save::init( const name& admin, const extended_symbol& ptoken, const extended_symbol& itoken,
-                         const plan_conf_s& pc, const assset& mini_deposit_amount, const uint64_t& share_pool_id ) {
+                         const plan_conf_s& pc, const asset& mini_deposit_amount, const uint64_t& share_pool_id ) {
       // CHECK(false, "not allowed" )
       require_auth( _self );
       
