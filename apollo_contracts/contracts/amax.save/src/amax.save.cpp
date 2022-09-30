@@ -28,7 +28,7 @@ using namespace wasm::safemath;
 
    inline uint64_t get_ir_ladder1( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))  return 800;    //0.08 * 10000
-      if( quant.amount <= (1000 * get_precision(quant) ))  return 1000;   // 0.1 * 10000
+      if( quant.amount <= (2000 * get_precision(quant) ))  return 1000;   // 0.1 * 10000
                                     return 1200;   //0.12 * 10000
    }
 
