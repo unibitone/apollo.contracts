@@ -5,8 +5,6 @@
 #include <amax.token.hpp>
 
 static constexpr eosio::name active_permission{"active"_n};
-static constexpr uint64_t days_of_year      = 365;
-static constexpr uint64_t seconds_of_day    = 60*60*24;
 
 
 namespace amax {
@@ -160,7 +158,7 @@ using namespace wasm::safemath;
       auto total_elapsed_sec  = now.sec_since_epoch() - save_acct.created_at.sec_since_epoch();
 
       auto interest           = asset( 0, _gstate.interest_token.get_symbol() );
-      _term_interest(save_acct.interest_rate, save_acct.deposit_quant, total_elapsed_sec, days_of_year * seconds_of_day, interest );
+      _term_interest(save_acct.interest_rate, save_acct.deposit_quant, total_elapsed_sec, YEAR_DAYS * DAY_SECONDS, interest );
       if (interest > save_acct.interest_term_quant) 
          interest = save_acct.interest_term_quant;
 
@@ -237,7 +235,7 @@ using namespace wasm::safemath;
          save_acct.plan_id             = plan_id;
          save_acct.interest_rate       = get_interest_rate( plan.conf.ir_scheme, quant); 
          save_acct.interest_term_quant = asset(0, _gstate.interest_token.get_symbol()); 
-         _term_interest( save_acct.interest_rate, quant, plan.conf.deposit_term_days, days_of_year, save_acct.interest_term_quant );
+         _term_interest( save_acct.interest_rate, quant, plan.conf.deposit_term_days, YEAR_DAYS, save_acct.interest_term_quant );
 
          save_acct.deposit_quant       = quant;
          save_acct.interest_collected  = asset( 0, _gstate.interest_token.get_symbol() );

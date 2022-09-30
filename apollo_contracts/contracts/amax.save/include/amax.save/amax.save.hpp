@@ -23,6 +23,8 @@ static constexpr name      CNYD_BANK   = "cnyd.token"_n;
 static constexpr symbol    CNYD        = symbol(symbol_code("CNYD"), 4);
 static constexpr uint16_t  PCT_BOOST   = 10000;
 static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
+static constexpr uint64_t  YEAR_DAYS   = 365;
+
 
 enum class err: uint8_t {
    NONE                 = 0,
