@@ -54,7 +54,7 @@ using namespace wasm::safemath;
    
    inline void _term_interest( const uint64_t interest_rate, const asset& deposit_quant, 
                               const uint64_t real_duration, const uint64_t& total_duraton, asset& interest ) {
-      CHECKC ( real_duration > 0 && real_duration < total_duraton, err::PARAM_ERROR, "invald param ") 
+      CHECKC ( real_duration > 0, err::PARAM_ERROR, "invald param ") 
       interest.amount = mul( mul(interest_rate * 100, real_duration, total_duraton), deposit_quant.amount, PCT_BOOST * 100 );
    }
 
