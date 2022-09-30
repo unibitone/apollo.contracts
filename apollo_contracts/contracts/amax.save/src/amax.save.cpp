@@ -5,6 +5,7 @@
 #include <amax.token.hpp>
 
 static constexpr eosio::name active_permission{"active"_n};
+static constexpr uint64_t days_of_year      = 365;
 
 
 namespace amax {
@@ -25,9 +26,9 @@ using namespace wasm::safemath;
       return get_precision(a.symbol);
    }
 
-   inline uint64_t get_ir_ladder1( const uint64_t& deposit_amount ) {
-      if( deposit_amount <= 1000 )  return 800;    //0.08 * 10000
-      if( deposit_amount <= 2000 )  return 1000;   // 0.1 * 10000
+   inline uint64_t get_ir_ladder1( const asset& quant ) {
+      if( quant.amount <= (1000 * get_precision(quant) ))  return 800;    //0.08 * 10000
+      if( quant.amount <= (1000 * get_precision(quant) ))  return 1000;   // 0.1 * 10000
                                     return 1200;   //0.12 * 10000
    }
 
@@ -41,9 +42,9 @@ using namespace wasm::safemath;
       return 300; // 3%
    }
 
-   inline uint64_t get_interest_rate( const name& ir_scheme, const uint64_t& deposit_amount ) {
+   inline uint64_t get_interest_rate( const name& ir_scheme, const asset& quant ) {
       switch( ir_scheme.value ) {
-         case interest_rate_scheme::LADDER1.value : return get_ir_ladder1(deposit_amount);
+         case interest_rate_scheme::LADDER1.value : return get_ir_ladder1(quant);
          case interest_rate_scheme::DEMAND1.value : return get_ir_dm1();
          case interest_rate_scheme::DEMAND2.value : return get_ir_dm2();
          case interest_rate_scheme::DEMAND3.value : return get_ir_dm3();
@@ -51,8 +52,10 @@ using namespace wasm::safemath;
       }
    }
    
-   inline void _term_interest( const uint64_t interest_rate, const asset& deposit_quant, asset& interest ) {
-      interest.amount = mul( interest_rate, deposit_quant.amount, PCT_BOOST );
+   inline void _term_interest( const uint64_t interest_rate, const asset& deposit_quant, asset& interest, 
+                              const uint64_t real_duration, const uint64_t& total_duraton ) {
+      CHECKC ( real_duration > 0 && real_duration < total_duraton, err::PARAM_ERROR, "invald param ") 
+      interest.amount = mul( mul(interest_rate * 100, real_duration, total_duraton), deposit_quant.amount, PCT_BOOST * 100 );
    }
 
    // auto ext_symb = extended_symbol(AMAX, SYS_BANK);
@@ -152,10 +155,11 @@ using namespace wasm::safemath;
       auto elapsed_sec        = now.sec_since_epoch() - save_acct.last_collected_at.sec_since_epoch();
       CHECKC( elapsed_sec > DAY_SECONDS, err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
       auto total_elapsed_sec  = now.sec_since_epoch() - save_acct.created_at.sec_since_epoch();
-      auto finish_rate        = div( div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), plan.conf.deposit_term_days, 1 );
-      auto interest_due_rate  = mul( save_acct.interest_rate, finish_rate, PCT_BOOST );
-      auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, PCT_BOOST );
-      auto interest           = asset( interest_amount, _gstate.interest_token.get_symbol() );
+      // auto finish_rate        = div( div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), plan.conf.deposit_term_days, 1 );
+      // auto interest_due_rate  = mul( save_acct.interest_rate, finish_rate, PCT_BOOST );
+      // auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, PCT_BOOST );
+      auto interest           = asset( 0, _gstate.interest_token.get_symbol() );
+      _term_interest(save_acct.interest_rate, save_acct.deposit_quant, interest, div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), days_of_year );
       if (interest > save_acct.interest_term_quant) 
          interest = save_acct.interest_term_quant;
 
@@ -211,6 +215,8 @@ using namespace wasm::safemath;
          _int_refuel_log(from, plan_id, quant, current_time_point());
 
       } else {
+         CHECKC( _gstate.mini_deposit_amount < quant, err::INCORRECT_AMOUNT, "deposit amount too small" )
+
          uint64_t plan_id = 1;   //default 1st-plan 
          if (memo_params.size() == 2 && memo_params[0] == "deposit")
             plan_id = to_uint64(memo_params[1], "deposit plan");
@@ -228,8 +234,10 @@ using namespace wasm::safemath;
          // auto accts                    = save_account_t::tbl_t(_self, from.value);
          auto save_acct                = save_account_t( ++_gstate.last_save_id );
          save_acct.plan_id             = plan_id;
-         save_acct.interest_rate       = get_interest_rate( plan.conf.ir_scheme, quant.amount / get_precision(quant) ); 
-         save_acct.interest_term_quant = asset(0, _gstate.interest_token.get_symbol()); _term_interest( save_acct.interest_rate, quant, save_acct.interest_term_quant );
+         save_acct.interest_rate       = get_interest_rate( plan.conf.ir_scheme, quant); 
+         save_acct.interest_term_quant = asset(0, _gstate.interest_token.get_symbol()); 
+         _term_interest( save_acct.interest_rate, quant, save_acct.interest_term_quant, plan.conf.deposit_term_days, days_of_year);
+
          save_acct.deposit_quant       = quant;
          save_acct.interest_collected  = asset( 0, _gstate.interest_token.get_symbol() );
          save_acct.created_at          = now;

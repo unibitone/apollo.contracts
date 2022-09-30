@@ -45,10 +45,11 @@ NTBL("global") global_t {
     name penalty_share_account              = "amax.share"_n;
     extended_symbol     principal_token;            //E.g. 8,AMAX@amax.token, can be set differently for diff contract
     extended_symbol     interest_token;             //E.g. 8,AMAX@amax.token, can be set differently for diff contract
+    asset mini_deposit_amount;
     uint64_t share_pool_id                  = 0;    //to be set a value which has been set for this contract as a whole
     uint64_t last_save_id                   = 0;
 
-    EOSLIB_SERIALIZE( global_t, (admin)(penalty_share_account)(principal_token)(interest_token)
+    EOSLIB_SERIALIZE( global_t, (admin)(penalty_share_account)(principal_token)(interest_token)(mini_deposit_amount)
                                 (share_pool_id)(last_save_id) )
 
 };
