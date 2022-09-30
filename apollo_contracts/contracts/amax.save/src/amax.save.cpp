@@ -52,8 +52,8 @@ using namespace wasm::safemath;
       }
    }
    
-   inline void _term_interest( const uint64_t interest_rate, const asset& deposit_quant, asset& interest, 
-                              const uint64_t real_duration, const uint64_t& total_duraton ) {
+   inline void _term_interest( const uint64_t interest_rate, const asset& deposit_quant, 
+                              const uint64_t real_duration, const uint64_t& total_duraton, asset& interest ) {
       CHECKC ( real_duration > 0 && real_duration < total_duraton, err::PARAM_ERROR, "invald param ") 
       interest.amount = mul( mul(interest_rate * 100, real_duration, total_duraton), deposit_quant.amount, PCT_BOOST * 100 );
    }
@@ -73,13 +73,15 @@ using namespace wasm::safemath;
    //    };
 
    void amax_save::init( const name& admin, const extended_symbol& ptoken, const extended_symbol& itoken,
-                         const plan_conf_s& pc ) {
+                         const plan_conf_s& pc, const assset& mini_deposit_amount, const uint64_t& share_pool_id ) {
       // CHECK(false, "not allowed" )
       require_auth( _self );
       
       _gstate.principal_token = ptoken;
       _gstate.interest_token  = itoken;
       _gstate.admin           = admin;
+      _gstate.mini_deposit_amount = mini_deposit_amount;
+      _gstate.share_pool_id      = share_pool_id;
    
       auto zero_pricipal = asset(0, ptoken.get_symbol());
       auto zero_interest = asset(0, itoken.get_symbol());
@@ -155,11 +157,12 @@ using namespace wasm::safemath;
       auto elapsed_sec        = now.sec_since_epoch() - save_acct.last_collected_at.sec_since_epoch();
       CHECKC( elapsed_sec > DAY_SECONDS, err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
       auto total_elapsed_sec  = now.sec_since_epoch() - save_acct.created_at.sec_since_epoch();
+
       // auto finish_rate        = div( div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), plan.conf.deposit_term_days, 1 );
       // auto interest_due_rate  = mul( save_acct.interest_rate, finish_rate, PCT_BOOST );
       // auto interest_amount    = mul( save_acct.deposit_quant.amount, interest_due_rate, PCT_BOOST );
       auto interest           = asset( 0, _gstate.interest_token.get_symbol() );
-      _term_interest(save_acct.interest_rate, save_acct.deposit_quant, interest, div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), days_of_year );
+      _term_interest(save_acct.interest_rate, save_acct.deposit_quant, div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), days_of_year, interest );
       if (interest > save_acct.interest_term_quant) 
          interest = save_acct.interest_term_quant;
 
@@ -236,7 +239,7 @@ using namespace wasm::safemath;
          save_acct.plan_id             = plan_id;
          save_acct.interest_rate       = get_interest_rate( plan.conf.ir_scheme, quant); 
          save_acct.interest_term_quant = asset(0, _gstate.interest_token.get_symbol()); 
-         _term_interest( save_acct.interest_rate, quant, save_acct.interest_term_quant, plan.conf.deposit_term_days, days_of_year);
+         _term_interest( save_acct.interest_rate, quant, plan.conf.deposit_term_days, days_of_year, save_acct.interest_term_quant );
 
          save_acct.deposit_quant       = quant;
          save_acct.interest_collected  = asset( 0, _gstate.interest_token.get_symbol() );
