@@ -6,6 +6,7 @@
 
 static constexpr eosio::name active_permission{"active"_n};
 static constexpr uint64_t days_of_year      = 365;
+static constexpr uint64_t seconds_of_day    = 60*60*24;
 
 
 namespace amax {
@@ -159,7 +160,7 @@ using namespace wasm::safemath;
       auto total_elapsed_sec  = now.sec_since_epoch() - save_acct.created_at.sec_since_epoch();
 
       auto interest           = asset( 0, _gstate.interest_token.get_symbol() );
-      _term_interest(save_acct.interest_rate, save_acct.deposit_quant, div( total_elapsed_sec, DAY_SECONDS, PCT_BOOST ), days_of_year, interest );
+      _term_interest(save_acct.interest_rate, save_acct.deposit_quant, total_elapsed_sec, days_of_year * seconds_of_day, interest );
       if (interest > save_acct.interest_term_quant) 
          interest = save_acct.interest_term_quant;
 
