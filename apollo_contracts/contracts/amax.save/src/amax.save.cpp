@@ -55,7 +55,7 @@ using namespace wasm::safemath;
    inline void _term_interest( const uint64_t interest_rate, const asset& deposit_quant, 
                               const uint64_t real_duration, const uint64_t& total_duraton, asset& interest ) {
       CHECKC ( real_duration > 0, err::PARAM_ERROR, "invald param ") 
-      interest.amount = mul( mul(interest_rate * 100, real_duration, total_duraton), deposit_quant.amount, PCT_BOOST * 100 );
+      interest.amount = mul_down( mul_down(interest_rate * 100, real_duration, total_duraton), deposit_quant.amount, PCT_BOOST * 100 );
    }
 
    // auto ext_symb = extended_symbol(AMAX, SYS_BANK);
@@ -120,7 +120,7 @@ using namespace wasm::safemath;
 
          if (premature_withdraw) {
             auto unfinish_rate      = div( save_termed_at.sec_since_epoch() - now.sec_since_epoch(), plan.conf.deposit_term_days * DAY_SECONDS, PCT_BOOST );
-            auto penalty_amount     = mul( mul( save_acct.deposit_quant.amount, unfinish_rate, PCT_BOOST ), plan.conf.advance_redeem_fine_rate, PCT_BOOST );
+            auto penalty_amount     = mul_up( mul_up( save_acct.deposit_quant.amount, unfinish_rate, PCT_BOOST ), plan.conf.advance_redeem_fine_rate, PCT_BOOST );
             auto penalty            = asset( penalty_amount, _gstate.principal_token.get_symbol() );
             redeem_quant            -= penalty;
             CHECKC( redeem_quant.amount > 0, err::INCORRECT_AMOUNT, "redeem amount not positive " )
@@ -215,7 +215,7 @@ using namespace wasm::safemath;
          _int_refuel_log(from, plan_id, quant, current_time_point());
 
       } else {
-         CHECKC( _gstate.mini_deposit_amount < quant, err::INCORRECT_AMOUNT, "deposit amount too small" )
+         CHECKC( _gstate.mini_deposit_amount <= quant, err::INCORRECT_AMOUNT, "deposit amount too small" )
 
          uint64_t plan_id = 1;   //default 1st-plan 
          if (memo_params.size() == 2 && memo_params[0] == "deposit")
