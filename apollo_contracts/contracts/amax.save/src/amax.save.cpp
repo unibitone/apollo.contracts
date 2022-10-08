@@ -25,17 +25,17 @@ using namespace wasm::safemath;
       return get_precision(a.symbol);
    }
 
-   inline uint64_t get_ir_ladder12mo( const asset& quant ) {
+   inline uint64_t get_ir_ladder12m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 800;    // 8%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 1000;   // 10%
                                                             return 1200;   // 12%
    }
-   inline uint64_t get_ir_ladder6mo( const asset& quant ) {
+   inline uint64_t get_ir_ladder6m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 680;    // 6.8%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 800;    // 8%
                                                             return 1000;   // 10%
    }
-   inline uint64_t get_ir_ladder3mo( const asset& quant ) {
+   inline uint64_t get_ir_ladder3m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 600;    // 6%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 680;    // 6.8%
                                                             return 800;    // 8%
@@ -53,9 +53,9 @@ using namespace wasm::safemath;
 
    inline uint64_t get_interest_rate( const name& ir_scheme, const asset& quant ) {
       switch( ir_scheme.value ) {
-         case interest_rate_scheme::LADDER1.value : return get_ir_ladder3mo(quant);
-         case interest_rate_scheme::LADDER2.value : return get_ir_ladder6mo(quant);
-         case interest_rate_scheme::LADDER3.value : return get_ir_ladder12mo(quant);
+         case interest_rate_scheme::LADDER1.value : return get_ir_ladder3m(quant);
+         case interest_rate_scheme::LADDER2.value : return get_ir_ladder6m(quant);
+         case interest_rate_scheme::LADDER3.value : return get_ir_ladder12m(quant);
          case interest_rate_scheme::DEMAND1.value : return get_ir_dm1();
          case interest_rate_scheme::DEMAND2.value : return get_ir_dm2();
          case interest_rate_scheme::DEMAND3.value : return get_ir_dm3();
