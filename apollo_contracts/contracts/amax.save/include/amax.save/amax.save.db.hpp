@@ -33,9 +33,9 @@ namespace deposit_type {
 }
 
 namespace interest_rate_scheme {
-    static constexpr eosio::name LADDER3    = "lad3"_n;
-    static constexpr eosio::name LADDER2    = "lad2"_n;
-    static constexpr eosio::name LADDER1    = "lad1"_n;
+    static constexpr eosio::name LADDER3    = "lad3"_n;     //12-mo ladder ir
+    static constexpr eosio::name LADDER2    = "lad2"_n;     //6-mo ladder ir
+    static constexpr eosio::name LADDER1    = "lad1"_n;     //3-mo ladder ir
     static constexpr eosio::name LOG1       = "log1"_n;
     static constexpr eosio::name DEMAND1    = "dem1"_n;
     static constexpr eosio::name DEMAND2    = "dem2"_n;

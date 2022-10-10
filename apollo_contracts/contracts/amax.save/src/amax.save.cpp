@@ -25,16 +25,21 @@ using namespace wasm::safemath;
       return get_precision(a.symbol);
    }
 
+   //lad3
    inline uint64_t get_ir_ladder12m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 800;    // 8%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 1000;   // 10%
                                                             return 1200;   // 12%
    }
+
+   //lad2
    inline uint64_t get_ir_ladder6m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 680;    // 6.8%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 800;    // 8%
                                                             return 1000;   // 10%
    }
+
+   //lad1
    inline uint64_t get_ir_ladder3m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 600;    // 6%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 680;    // 6.8%
@@ -83,29 +88,56 @@ using namespace wasm::safemath;
    //       time_point_sec( default_plan_to )
    //    };
 
-   void amax_save::init( const name& admin, const extended_symbol& ptoken, const extended_symbol& itoken,
-                         const plan_conf_s& pc, const asset& mini_deposit_amount, const uint64_t& share_pool_id ) {
-      // CHECK(false, "not allowed" )
+   void amax_save::init() {
+      CHECK(false, "disabled" )
+
       require_auth( _self );
       
-      _gstate.principal_token = ptoken;
-      _gstate.interest_token  = itoken;
-      _gstate.admin           = admin;
-      _gstate.mini_deposit_amount = mini_deposit_amount;
-      _gstate.share_pool_id      = share_pool_id;
+      // _gstate.principal_token       = ptoken;
+      // _gstate.interest_token        = itoken;
+      // _gstate.admin                 = admin;
+      // _gstate.mini_deposit_amount   = mini_deposit_amount;
+      // _gstate.share_pool_id         = share_pool_id;
    
-      auto zero_pricipal = asset(0, ptoken.get_symbol());
-      auto zero_interest = asset(0, itoken.get_symbol());
+      // auto zero_pricipal            = asset(0, ptoken.get_symbol());
+      // auto zero_interest            = asset(0, itoken.get_symbol());
 
-      auto plan = save_plan_t(1);
-      _db.get( plan );
-      plan.conf               = pc;
-      plan.deposit_available  = zero_pricipal;
-      plan.deposit_redeemed   = zero_pricipal;
-      plan.interest_available = zero_interest;
-      plan.interest_redeemed  = zero_interest;
-      plan.created_at         = current_time_point();
-      _db.set( plan );
+      // auto plan = save_plan_t(1);
+      // _db.get( plan );
+      // plan.conf               = pc;
+      // plan.deposit_available  = zero_pricipal;
+      // plan.deposit_redeemed   = zero_pricipal;
+      // plan.interest_available = zero_interest;
+      // plan.interest_redeemed  = zero_interest;
+      // plan.created_at         = current_time_point();
+      // _db.set( plan );
+
+      // auto plan1 = save_plan_t(1);
+      // _db.get( plan1 );
+      // plan1.conf.ir_scheme = "lad1"_n;
+      // plan1.conf.deposit_term_days = 90;
+      // _db.set( plan1 );
+
+      // auto plan3 = save_plan_t(3);
+      // _db.get( plan3 );
+      // plan3.conf.ir_scheme = "lad3"_n;
+      // plan3.conf.deposit_term_days = 365;
+      // _db.set( plan3 );
+
+      // auto acct = "huanghuanghh"_n;
+
+      // auto save1 = save_account_t(1);
+      // _db.get( acct.value, save1 );
+      // save1.interest_term_quant.amount = 147945;
+      // save1.term_ended_at = save1.created_at + 90 * DAY_SECONDS;
+      // _db.set( acct.value, save1 );
+
+      // auto save3 = save_account_t(3);
+      // _db.get( acct.value, save3 );
+      // save3.interest_rate = 800;
+      // save3.interest_term_quant.amount = 800000;
+      // save3.term_ended_at = save3.created_at + 365 * DAY_SECONDS;
+      // _db.set( acct.value, save3 );
 
    }
 
