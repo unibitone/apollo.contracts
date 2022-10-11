@@ -25,21 +25,21 @@ using namespace wasm::safemath;
       return get_precision(a.symbol);
    }
 
-   //lad3
+   //lad3: 12 mon, 365 days
    inline uint64_t get_ir_ladder12m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 800;    // 8%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 1000;   // 10%
                                                             return 1200;   // 12%
    }
 
-   //lad2
+   //lad2: 6 mon, 180 days
    inline uint64_t get_ir_ladder6m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 680;    // 6.8%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 800;    // 8%
                                                             return 1000;   // 10%
    }
 
-   //lad1
+   //lad1: 3 mon, 90 days
    inline uint64_t get_ir_ladder3m( const asset& quant ) {
       if( quant.amount <= (1000 * get_precision(quant) ))   return 600;    // 6%
       if( quant.amount <= (2000 * get_precision(quant) ))   return 680;    // 6.8%
