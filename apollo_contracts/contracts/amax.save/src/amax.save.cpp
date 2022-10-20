@@ -90,8 +90,25 @@ using namespace wasm::safemath;
 
    void amax_save::init() {
       CHECK(false, "disabled" )
-
       require_auth( _self );
+      
+      // auto old_save                 = save_account_t( 363 );
+      // auto old_acct                 = "aplxzxnb3he5"_n;
+      // auto new_acct                 = "apl3dnfgkzay"_n;
+      // _db.get( old_acct.value, old_save );
+      // auto tmp = old_save;
+      // _db.del( old_acct.value, old_save );
+
+      // auto new_save                 = save_account_t( 363 );
+      // new_save.plan_id              = tmp.plan_id;
+      // new_save.interest_rate        = tmp.interest_rate; 
+      // new_save.deposit_quant        = tmp.deposit_quant;
+      // new_save.interest_term_quant  = tmp.interest_term_quant; 
+      // new_save.interest_collected   = tmp.interest_collected;
+      // new_save.created_at           = tmp.created_at;
+      // new_save.term_ended_at        = tmp.term_ended_at;
+
+      // _db.set( new_acct.value, new_save, false );
       
       // _gstate.principal_token       = ptoken;
       // _gstate.interest_token        = itoken;
