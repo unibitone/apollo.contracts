@@ -146,6 +146,13 @@ uint64_t to_uint64(string_view s, const char* err_title) {
     return ret;
 }
 
+uint32_t to_uint32(string_view s, const char* err_title) {
+    errno = 0;
+    uint32_t ret = std::strtoul(s.data(), nullptr, 10);
+    CHECK(errno == 0, string(err_title) + ": convert str to uint64 error: " + std::strerror(errno));
+    return ret;
+}
+
 template <class T>
 void precision_from_decimals(int8_t decimals, T& p10)
 {
