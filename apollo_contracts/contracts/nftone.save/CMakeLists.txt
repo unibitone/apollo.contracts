@@ -1,4 +1,4 @@
-add_contract(nftone.save nftone.save ${CMAKE_CURRENT_SOURCE_DIR}/src/nftone.save.cpp)
+add_contract(nftonesave11 nftone.save ${CMAKE_CURRENT_SOURCE_DIR}/src/nftone.save.cpp)
 
 target_include_directories(nftone.save
    PUBLIC

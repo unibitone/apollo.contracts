@@ -91,6 +91,7 @@ SAVE_TBL save_campaign_t {
     
     uint32_t get_available_quotas()const { return total_quotas - quotas_purchased; }
     asset    get_total_interest()const { return interest_available + interest_redeemed; }
+    asset    get_refund_interest()const { return interest_available + interest_redeemed - interest_expectation; }
 
     typedef multi_index<"savecampaign"_n, save_campaign_t > tbl_t;
 

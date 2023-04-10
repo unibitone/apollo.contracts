@@ -31,6 +31,15 @@ using namespace wasm::safemath;
   
   void nftone_save::setglobal(const set<name> &account, const set<name> &ntoken_contract, const set<name> &profit_token_contract ) {
       require_auth( _self );
+      for (auto &a : account) {
+          CHECKC( is_account(a), err::ACCOUNT_INVALID, "account not found: " + a.to_string() )
+      }
+      for (auto &ncontract : ntoken_contract) {
+          CHECKC( is_account(ncontract), err::ACCOUNT_INVALID, "ntoken_contract not found: " + ncontract.to_string() )
+      }
+      for (auto &token_contract : profit_token_contract) {
+          CHECKC( is_account(token_contract), err::ACCOUNT_INVALID, "profit_token_contract not found: " + token_contract.to_string() )
+      }
       _gstate.whitelist.insert( account.begin(), account.end() );
       _gstate.ntoken_contract_required.insert(ntoken_contract.begin(), ntoken_contract.end());
       _gstate.profit_token_contract_required.insert(profit_token_contract.begin(), profit_token_contract.end());
@@ -45,9 +54,9 @@ using namespace wasm::safemath;
   void nftone_save::ontransfer()
   {
       auto contract = get_first_receiver();
-      if (token_contracts.count(contract) > 0) {
+      if (_gstate.profit_token_contract_required.count(contract) > 0) {
           execute_function(&nftone_save::_on_token_transfer);
-      } else if (ntoken_contracts.count(contract)>0) {
+      } else if (_gstate.ntoken_contract_required.count(contract)>0) {
           execute_function(&nftone_save::_on_ntoken_transfer);
       }
   }
@@ -168,7 +177,6 @@ using namespace wasm::safemath;
       vector<nasset> redeem_quant = {pledged_quant.quantity};
       NTOKEN_TRANSFER( pledged_quant.contract, owner, redeem_quant, "redeem: " + to_string(save_id) )
   }
-
   
   void nftone_save::cnlcampaign(const name& issuer, const name& owner, const uint64_t& campaign_id) {
       require_auth( issuer );
@@ -177,13 +185,28 @@ using namespace wasm::safemath;
       }
       
       save_campaign_t campaign(campaign_id);
-      CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaignnot found: " + to_string( campaign_id ) )
+      CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
       CHECKC( campaign.sponsor == owner, err::NO_AUTH, "permission denied" )
       CHECKC( campaign.begin_at > current_time_point(), save_err::STARTED, "campaign already started" )
       if(campaign.status == campaign_status::CREATED){
           TRANSFER( campaign.interest_symbol.get_contract(), owner, campaign.interest_available, "cancel campaign: " + to_string(campaign_id) )
       }
       _db.del( campaign );
+  }
+  
+  void nftone_save::refundint(const name& issuer, const name& owner, const uint64_t& campaign_id) {
+       require_auth( issuer );
+      if ( issuer != owner ) {
+         CHECKC( issuer == _gstate.admin, err::NO_AUTH, "non-admin not allowed to withdraw others saving account" )
+      }
+      
+      save_campaign_t campaign(campaign_id);
+      CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
+      CHECKC( campaign.sponsor == owner, err::NO_AUTH, "permission denied" )
+      CHECKC( campaign.end_at < current_time_point(), save_err::NOT_ENDED, "campaign not ended" )
+      if(campaign.status == campaign_status::CREATED){
+          TRANSFER( campaign.interest_symbol.get_contract(), owner, campaign.get_refund_interest(), "refund interest, campaign: " + to_string(campaign_id) )
+      }
   }
   
   void nftone_save::intcolllog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
@@ -287,7 +310,7 @@ using namespace wasm::safemath;
 
           uint64_t campaign_id = to_uint64(parts[1], "campaign_id parse int error");
           save_campaign_t campaign(campaign_id);
-          CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaignnot found: " + to_string( campaign_id ) )
+          CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
           CHECKC( campaign.status == campaign_status::CREATED, err::STATE_MISMATCH, "state mismatch" )
           
           // uint64_t max_days  = to_uint64(parts[2], "max days parse int error");
