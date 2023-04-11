@@ -45,7 +45,7 @@ using namespace wasm::safemath;
       _gstate.profit_token_contract_required.insert(profit_token_contract.begin(), profit_token_contract.end());
   }
   
-  void nftone_save::del(const uint64_t &campaign_id) {
+  void nftone_save::delcampaign(const uint64_t &campaign_id) {
       require_auth( _self );
       save_campaign_t campaign(campaign_id);
       _db.del(campaign);
@@ -429,6 +429,8 @@ using namespace wasm::safemath;
           if(profit_token > max_profit_token) max_profit_token = profit_token;
           if(days > max_days)                 max_days = days;
       }
+      print(22222);
+
   }
   
   void nftone_save::_build_pledge_ntokens(  map<extended_nsymbol, quotas>& pledge_ntokens_tmp,

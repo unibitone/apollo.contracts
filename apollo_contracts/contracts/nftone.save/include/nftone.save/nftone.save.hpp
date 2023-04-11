@@ -81,7 +81,7 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
                                 vector<asset> &plan_profits_list,
                                 const name &ntoken_contract);
                                 
-  ACTION del(const uint64_t &campaign_id);
+  ACTION delcampaign(const uint64_t &campaign_id);
   
   /**
   * @brief user claim interest
