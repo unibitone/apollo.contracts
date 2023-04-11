@@ -265,7 +265,7 @@ using namespace wasm::safemath;
           CHECKC( end > current_time_point().sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
 
           _pre_create_campaign(from, campaign_name, campaign_en_name, campaign_pic, begin, end);
-      } else if (parts.size() == 8 && parts[0] == "create_campaign") {
+      } else if (parts.size() == 7 && parts[0] == "create_campaign") {
           
           CHECKC( _gstate.profit_token_contract_required.count( get_first_receiver()), err::PARAM_ERROR, "token contract invalid" )
 
