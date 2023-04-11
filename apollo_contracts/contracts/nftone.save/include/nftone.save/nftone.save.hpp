@@ -20,6 +20,12 @@ using namespace wasm::db;
 static constexpr name      SYS_BANK    = "amax.token"_n;
 static constexpr symbol    AMAX_SYMBOL = symbol(symbol_code("AMAX"), 8);
 
+struct tmp_e {
+    uint32_t                      total_quotas;          
+    map<uint16_t, asset>          plans;          
+    map<extended_nsymbol, quotas> pledge_ntokens; 
+};
+
 enum class save_err: uint8_t {
    INTEREST_INSUFFICIENT    = 0,
    QUOTAS_INSUFFICIENT      = 1,
@@ -133,7 +139,12 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
                                   const string_view& campaign_pic,
                                   const uint64_t& begin,
                                   const uint64_t& end);
-                                              
+                                  
+      void _memo_analysis( vector<string_view>& parts, 
+                            const name& from, 
+                            const asset& quantity,
+                            tmp_e& tmp);        
+                                   
       void _build_plan( map<uint16_t, asset>& plans_tmp,
                         const symbol& interest_symbol,
                         vector<string_view>& plan_days_list,
