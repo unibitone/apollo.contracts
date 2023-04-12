@@ -287,7 +287,7 @@ using namespace wasm::safemath;
           campaign.interest_expectation = asset(0, quantity.symbol);
           campaign.status               = campaign_status::CREATED;
           _db.set(campaign);
-      } else if ( parts.size() == 5 && parts[0] == "increment_interest" ) {
+      } else if ( parts.size() == 3 && parts[0] == "increment_interest" ) {
         
           CHECKC( _gstate.profit_token_contract_required.count(get_first_receiver()), err::PARAM_ERROR, "token contract invalid" )
 
