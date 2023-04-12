@@ -79,7 +79,8 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
                                 vector<uint64_t> &nftids, const time_point_sec &end_at, 
                                 vector<uint16_t> &plan_days_list, 
                                 vector<asset> &plan_profits_list,
-                                const name &ntoken_contract);
+                                const name &ntoken_contract,
+                                const uint32_t &total_quotas);
                                 
   ACTION delcampaign(const uint64_t &campaign_id);
   

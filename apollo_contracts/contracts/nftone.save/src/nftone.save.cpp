@@ -65,7 +65,8 @@ using namespace wasm::safemath;
                                 vector<uint64_t> &nftids, const time_point_sec &end_at, 
                                 vector<uint16_t> &plan_days_list, 
                                 vector<asset> &plan_profits_list,
-                                const name &ntoken_contract)
+                                const name &ntoken_contract,
+                                const uint32_t &total_quotas)
   {
       require_auth(sponsor);
       
@@ -110,10 +111,11 @@ using namespace wasm::safemath;
           if(profit_token > max_profit_token) max_profit_token = profit_token;
           if(days > max_days)                 max_days = days;
       }
-      
-      asset need_interest = asset(campaign.total_quotas * max_days * max_profit_token.amount, max_profit_token.symbol);
+      CHECKC( total_quotas >= campaign.total_quotas, err::PARAM_ERROR, "quotas cannot be less than the original" )
+      asset need_interest = asset( total_quotas * max_days * max_profit_token.amount, max_profit_token.symbol);
       CHECKC( need_interest <= campaign.get_total_interest(), save_err::INTEREST_INSUFFICIENT, "interest insufficient" )
       
+      campaign.total_quotas = total_quotas;
       campaign.end_at = end_at;
       _db.set(campaign);
   }
@@ -230,7 +232,7 @@ using namespace wasm::safemath;
   * @param memo: three formats:
   *       1) pre_create_campaign : $campaign_name : $campaign_en_name : $campaign_pic : $begin_at : $end_at                             -- pre-creation campaign by transfer fee
   *       2) create_campaign : $campaign_id : $contract_name : $nftids :  $plan_days : $plan_profit : $quotas                           -- create campaign by transfer interest
-  *       3) increment_interest : $campaign_id : $quotas                                                                                -- increment interest
+  *       3) increment_interest : $campaign_id                                                                                          -- increment interest
   */
   void nftone_save::_on_token_transfer( const name &from,
                                           const name &to,
@@ -287,7 +289,7 @@ using namespace wasm::safemath;
           campaign.interest_expectation = asset(0, quantity.symbol);
           campaign.status               = campaign_status::CREATED;
           _db.set(campaign);
-      } else if ( parts.size() == 3 && parts[0] == "increment_interest" ) {
+      } else if ( parts.size() == 2 && parts[0] == "increment_interest" ) {
         
           CHECKC( _gstate.profit_token_contract_required.count(get_first_receiver()), err::PARAM_ERROR, "token contract invalid" )
 
@@ -295,12 +297,9 @@ using namespace wasm::safemath;
           save_campaign_t campaign(campaign_id);
           CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
           CHECKC( campaign.status == campaign_status::CREATED, err::STATE_MISMATCH, "state mismatch" )
+          CHECKC( campaign.sponsor == from, err::NO_AUTH, "permission denied" )
           
-          uint64_t quotas  = to_uint64(parts[2], "quotas parse int error");
-          CHECKC( quotas >= campaign.total_quotas, err::PARAM_ERROR, "quotas cannot be less than the original" )
-
           campaign.interest_available += quantity;
-          campaign.total_quotas = quotas;
           _db.set(campaign);
           
           _int_refuel_log(from, campaign_id, quantity, current_time_point());
