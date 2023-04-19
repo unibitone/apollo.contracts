@@ -18,16 +18,6 @@ using namespace wasm::safemath;
 
 #define NTOKEN_TRANSFER(bank, to, quantity, memo) \
 { action(permission_level{get_self(), "active"_n }, bank, "transfer"_n, std::make_tuple( _self, to, quantity, memo )).send(); }
-
-  inline int64_t get_precision(const symbol &s) {
-    int64_t digit = s.precision();
-    CHECK(digit >= 0 && digit <= 18, "precision digit " + std::to_string(digit) + " should be in range[0,18]");
-    return calc_precision(digit);
-  }
-
-  inline int64_t get_precision(const asset &a) {
-    return get_precision(a.symbol);
-  }
   
   void nftone_save::setglobal(const set<name> &account, const set<name> &ntoken_contract, const set<name> &profit_token_contract ) {
       require_auth( _self );
@@ -45,18 +35,12 @@ using namespace wasm::safemath;
       _gstate.profit_token_contract_required.insert(profit_token_contract.begin(), profit_token_contract.end());
   }
   
-  void nftone_save::delcampaign(const uint64_t &campaign_id) {
-      require_auth( _self );
-      save_campaign_t campaign(campaign_id);
-      _db.del(campaign);
-  }
-   
   void nftone_save::ontransfer()
   {
       auto contract = get_first_receiver();
       if (_gstate.profit_token_contract_required.count(contract) > 0) {
           execute_function(&nftone_save::_on_token_transfer);
-      } else if (_gstate.ntoken_contract_required.count(contract)>0) {
+      } else if (_gstate.ntoken_contract_required.count(contract) > 0) {
           execute_function(&nftone_save::_on_ntoken_transfer);
       }
   }
@@ -72,10 +56,13 @@ using namespace wasm::safemath;
       
       save_campaign_t campaign(campaign_id);
       CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
-      CHECKC( campaign.status == campaign_status::CREATED, err::STATE_MISMATCH, "state mismatch" )
       CHECKC( campaign.sponsor == sponsor, err::NO_AUTH, "permission denied" )
-      CHECKC( end_at > campaign.begin_at, err::PARAM_ERROR, "begin time should be less than end time");
-      CHECKC( end_at.sec_since_epoch() - campaign.begin_at.sec_since_epoch() <= YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 365 days");
+      
+      if(campaign.status == campaign_status::CREATED){
+          CHECKC( end_at > campaign.begin_at, err::PARAM_ERROR, "begin time should be less than end time");
+          CHECKC( end_at.sec_since_epoch() - campaign.begin_at.sec_since_epoch() <= YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 365 days");
+      }
+          
       CHECKC( nftids.size() + campaign.pledge_ntokens.size() <= 5, err::PARAM_ERROR, "nft size should be less than or equal to 5");
       CHECKC( plan_days_list.size() + campaign.plans.size() <= 5, err::PARAM_ERROR, "plan size should be less than or equal to 5");
       CHECKC( plan_days_list.size() == plan_profits_list.size(), err::PARAM_ERROR, "days and profit_tokens size mismatch" );
@@ -113,10 +100,11 @@ using namespace wasm::safemath;
       }
       CHECKC( total_quotas >= campaign.total_quotas, err::PARAM_ERROR, "quotas cannot be less than the original" )
       asset need_interest = asset( total_quotas * max_days * max_profit_token.amount, max_profit_token.symbol);
-      CHECKC( need_interest <= campaign.get_total_interest(), save_err::INTEREST_INSUFFICIENT, "interest insufficient" )
+      CHECKC( need_interest <= campaign.interest_total, save_err::INTEREST_INSUFFICIENT, "interest insufficient" )
       
       campaign.total_quotas = total_quotas;
-      campaign.end_at = end_at;
+      if(campaign.status == campaign_status::CREATED)
+        campaign.end_at = end_at;
       _db.set(campaign);
   }
 
@@ -132,9 +120,9 @@ using namespace wasm::safemath;
       CHECKC( _db.get( owner.value, save_acct ), err::RECORD_NOT_FOUND, "account save not found" )
 
       auto now = current_time_point();
-      CHECKC( save_acct.term_ended_at > save_acct.last_collected_at, save_err::INTEREST_COLLECTED, "interest already collected" )
+      CHECKC( save_acct.term_ended_at > save_acct.last_claimed_at, save_err::INTEREST_COLLECTED, "interest already collected" )
 
-      auto elapsed_sec = now.sec_since_epoch() - save_acct.last_collected_at.sec_since_epoch();
+      auto elapsed_sec = now.sec_since_epoch() - save_acct.last_claimed_at.sec_since_epoch();
       CHECKC( elapsed_sec > DAY_SECONDS, save_err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
       
       save_campaign_t campaign( save_acct.campaign_id );
@@ -142,16 +130,14 @@ using namespace wasm::safemath;
 
       auto interest_due = save_acct.get_due_interest();
       CHECKC( interest_due.amount > 0, err::NOT_POSITIVE, "interest due amount is zero" )
-      CHECKC( campaign.interest_available > interest_due, err::NOT_POSITIVE, "insufficient available interest to collect" )
+      CHECKC( campaign.get_available_interest() > interest_due, err::NOT_POSITIVE, "insufficient available interest to collect" )
       TRANSFER( campaign.interest_symbol.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
       
-      save_acct.interest_collected  += interest_due;
-      save_acct.last_collected_at   = now;
+      save_acct.interest_claimed    += interest_due;
+      save_acct.last_claimed_at     = now;
       _db.set( owner.value, save_acct );
 
-      campaign.interest_available       -= interest_due;
-      campaign.interest_redeemed        += interest_due;
-
+      campaign.interest_claimed     += interest_due;
       _db.set( campaign );
 
       _int_coll_log(owner, save_acct.id, campaign.id, interest_due,  time_point_sec( current_time_point() ));
@@ -170,7 +156,7 @@ using namespace wasm::safemath;
       CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "plan not found: " + to_string(save_acct.campaign_id) )
 
       CHECKC( save_acct.term_ended_at < current_time_point(), save_err::TERM_NOT_ENDED, "term not ended" )
-      CHECKC( save_acct.term_ended_at <= save_acct.last_collected_at, save_err::INTEREST_NOT_COLLECTED, "interest not collected" )
+      CHECKC( save_acct.term_ended_at <= save_acct.last_claimed_at, save_err::INTEREST_NOT_COLLECTED, "interest not collected" )
       auto pledged_quant = save_acct.pledged;
       campaign.pledge_ntokens[pledged_quant.get_extended_nsymbol()].redeemed_quotas   += pledged_quant.quantity.amount;
       _db.set( campaign );
@@ -179,7 +165,7 @@ using namespace wasm::safemath;
       vector<nasset> redeem_quant = {pledged_quant.quantity};
       NTOKEN_TRANSFER( pledged_quant.contract, owner, redeem_quant, "redeem: " + to_string(save_id) )
   }
-  
+
   void nftone_save::cnlcampaign(const name& issuer, const name& owner, const uint64_t& campaign_id) {
       require_auth( issuer );
       if ( issuer != owner ) {
@@ -191,17 +177,17 @@ using namespace wasm::safemath;
       CHECKC( campaign.sponsor == owner, err::NO_AUTH, "permission denied" )
       CHECKC( campaign.begin_at > current_time_point(), save_err::STARTED, "campaign already started" )
       if(campaign.status == campaign_status::CREATED){
-          TRANSFER( campaign.interest_symbol.get_contract(), owner, campaign.interest_available, "cancel campaign: " + to_string(campaign_id) )
+          TRANSFER( campaign.interest_symbol.get_contract(), owner, campaign.interest_total, "cancel campaign: " + to_string(campaign_id) )
       }
       _db.del( campaign );
   }
   
   void nftone_save::refundint(const name& issuer, const name& owner, const uint64_t& campaign_id) {
       require_auth( issuer );
+      
       if ( issuer != owner ) {
          CHECKC( issuer == _gstate.admin, err::NO_AUTH, "non-admin not allowed to withdraw others saving account" )
       }
-      
       save_campaign_t campaign(campaign_id);
       CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
       CHECKC( campaign.sponsor == owner, err::NO_AUTH, "permission denied" )
@@ -211,6 +197,7 @@ using namespace wasm::safemath;
       if(campaign.status == campaign_status::CREATED && refund_interest.amount > 0){
           TRANSFER( campaign.interest_symbol.get_contract(), owner, refund_interest, "refund interest, campaign: " + to_string(campaign_id) )
       }
+      _db.del( campaign );
   }
   
   void nftone_save::intcolllog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
@@ -234,6 +221,7 @@ using namespace wasm::safemath;
   *       2) create_campaign : $campaign_id : $contract_name : $nftids :  $plan_days : $plan_profit : $quotas                           -- create campaign by transfer interest
   *       3) increment_interest : $campaign_id                                                                                          -- increment interest
   */
+ 
   void nftone_save::_on_token_transfer( const name &from,
                                           const name &to,
                                           const asset &quantity,
@@ -244,64 +232,48 @@ using namespace wasm::safemath;
 
       auto parts = split( memo, ":" );
 
-      if ( parts.size() == 6 && parts[0] == "pre_create_campaign" ) {
+      if ( parts.size() == 6 && parts[0] == "create_campaign " ) {
         
           CHECKC( get_first_receiver() == SYS_BANK, err::PARAM_ERROR, "token contract invalid" )
-          CHECKC( quantity >= _gstate.crt_campaign_fee, err::FEE_INSUFFICIENT, "fee insufficient");
+          CHECKC( quantity == _gstate.crt_campaign_fee, err::FEE_INSUFFICIENT, "fee insufficient");
           CHECKC( _gstate.whitelist.count(from), err::NO_AUTH, "account is not on the whitelist" )
 
           string_view campaign_name = parts[1];
-          CHECKC( campaign_name.size() <= 108, err::MEMO_FORMAT_ERROR, "campaign_name length is more than 120 bytes");
+          CHECKC( campaign_name.size() <= 64 && campaign_name.size() > 0, err::MEMO_FORMAT_ERROR, "campaign_name length is not more than 108 bytes and not empty");
 
           string_view campaign_en_name = parts[2];
-          CHECKC( campaign_en_name.size() <= 64, err::MEMO_FORMAT_ERROR, "campaign_en_name length is more than 64 bytes");
+          CHECKC( campaign_en_name.size() <= 64, err::MEMO_FORMAT_ERROR, "campaign_en_name length is not more than 64 bytes");
 
           string_view campaign_pic = parts[3];
-          CHECKC( campaign_pic.size() <= 64, err::MEMO_FORMAT_ERROR, "campaign_pic length is more than 64 bytes");
+          CHECKC( campaign_pic.size() <= 64 && campaign_pic.size() > 0, err::MEMO_FORMAT_ERROR, "campaign_pic length is not more than 64 bytes and not empty");
 
           auto begin = to_uint64(parts[4], "begin time parse int error");
           auto end   = to_uint64(parts[5], "end time parse int error");
-    
+
           CHECKC( end > begin, err::PARAM_ERROR, "begin time should be less than end time");
           CHECKC( end - begin <= YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 365 days");
           CHECKC( end > current_time_point().sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
 
           _pre_create_campaign(from, campaign_name, campaign_en_name, campaign_pic, begin, end);
-      } else if (parts.size() == 7 && parts[0] == "create_campaign") {
-          
-          CHECKC( _gstate.profit_token_contract_required.count( get_first_receiver()), err::PARAM_ERROR, "token contract invalid" )
-
-          uint64_t campaign_id = to_uint64(parts[1], "campaign_id parse int error");
-          save_campaign_t campaign(campaign_id);
-          CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
-          CHECKC( campaign.status == campaign_status::INIT, err::STATE_MISMATCH, "state mismatch" )
-          CHECKC( campaign.sponsor == from, err::NO_AUTH, "permission denied" )
-          
-          tmp_e tmp;
-          _memo_analysis(parts, from, quantity, tmp);
-          
-          campaign.plans                = tmp.plans;
-          campaign.interest_symbol      = extended_symbol(quantity.symbol, get_first_receiver());
-          campaign.total_quotas         = tmp.total_quotas;
-          campaign.pledge_ntokens       = tmp.pledge_ntokens;
-          campaign.interest_available   = quantity;
-          campaign.interest_redeemed    = asset(0, quantity.symbol);
-          campaign.interest_expectation = asset(0, quantity.symbol);
-          campaign.status               = campaign_status::CREATED;
-          _db.set(campaign);
-      } else if ( parts.size() == 2 && parts[0] == "increment_interest" ) {
+      } else if ( parts.size() == 2 && parts[0] == "refuel" ) {
         
           CHECKC( _gstate.profit_token_contract_required.count(get_first_receiver()), err::PARAM_ERROR, "token contract invalid" )
 
           uint64_t campaign_id = to_uint64(parts[1], "campaign_id parse int error");
           save_campaign_t campaign(campaign_id);
           CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
-          CHECKC( campaign.status == campaign_status::CREATED, err::STATE_MISMATCH, "state mismatch" )
           CHECKC( campaign.sponsor == from, err::NO_AUTH, "permission denied" )
           
-          campaign.interest_available += quantity;
+          if(campaign.status == campaign_status::INIT){
+              campaign.interest_claimed     = asset(0, quantity.symbol);
+              campaign.interest_frozen      = asset(0, quantity.symbol);
+              campaign.interest_symbol      = extended_symbol(quantity.symbol, get_first_receiver());
+              campaign.interest_total       = quantity;
+              campaign.status               = campaign_status::CREATED;
+          } else {
+              campaign.interest_total       += quantity;
+          }
           _db.set(campaign);
-          
           _int_refuel_log(from, campaign_id, quantity, current_time_point());
       } else {
           CHECKC( false, err::PARAM_ERROR, "param error" );
@@ -347,15 +319,15 @@ using namespace wasm::safemath;
           save_account_t save_acct(sid);
           save_acct.campaign_id                 = campaign_id;
           save_acct.pledged                     = extended_quantity;
-          save_acct.daily_interest_per_quota    = campaign.plans[days];
-          save_acct.days                        = days;
-          save_acct.interest_collected          = asset(0, campaign.interest_symbol.get_symbol());
+          save_acct.interest_per_quota          = campaign.plans[days] * days;
+          save_acct.plan_days                   = days;
+          save_acct.interest_claimed            = asset(0, campaign.interest_symbol.get_symbol());
           save_acct.term_ended_at               = now + days * DAY_SECONDS;
           save_acct.created_at                  = now;
-          save_acct.last_collected_at           = now;
+          save_acct.last_claimed_at             = now;
           _db.set( from.value, save_acct, false );
           
-          campaign.interest_expectation += asset(quantity.amount * days * campaign.plans[days].amount, campaign.interest_symbol.get_symbol());
+          campaign.interest_frozen  += asset(quantity.amount * days * campaign.plans[days].amount, campaign.interest_symbol.get_symbol());
           campaign.quotas_purchased += quantity.amount;
           campaign.pledge_ntokens[extended_quantity.get_extended_nsymbol()].allocated_quotas += quantity.amount;
           _db.set( campaign );
@@ -384,68 +356,6 @@ using namespace wasm::safemath;
       _db.set(campaign);
   }
 
-  void nftone_save::_memo_analysis( vector<string_view>& parts, const name& from, const asset& quantity, tmp_e& tmp)
-  {   
-
-      name ntoken_contract = name(parts[2]);
-      CHECKC( _gstate.ntoken_contract_required.count(ntoken_contract), err::PARAM_ERROR, "ntoken contract invalid" )
-
-      vector<string_view> nftids = split( parts[3], "|" );
-      CHECKC( nftids.size() > 0 && nftids.size() <= 5, err::PARAM_ERROR, "nftids must be greater than 0 and less than or equal to 5" )
-      map<extended_nsymbol, quotas> pledge_ntokens_tmp; 
-      _build_pledge_ntokens(tmp.pledge_ntokens, ntoken_contract, nftids);
-
-      auto plan_days_list = split( parts[4], "|" );
-      auto plan_profits_list = split( parts[5], "|" );
-      CHECKC( plan_days_list.size() > 0 && (plan_days_list.size() == plan_profits_list.size()), err::PARAM_ERROR, "The number of days does not match the number of plans" )
-
-      asset max_profit_token(0, quantity.symbol);
-      uint64_t max_days = 0;
-      _build_plan(tmp.plans, quantity.symbol, plan_days_list, plan_profits_list, max_profit_token, max_days);
-
-      tmp.total_quotas = to_uint64(parts[6], "quotas parse int error");
-      asset need_interest = asset(tmp.total_quotas * max_days * max_profit_token.amount, max_profit_token.symbol);
-      CHECKC( need_interest <= quantity, save_err::INTEREST_INSUFFICIENT, "interest insufficient" )
-
-  }
-  
-  void nftone_save::_build_plan(  map<uint16_t, asset>& plans_tmp,
-                                  const symbol& interest_symbol,
-                                  vector<string_view>& plan_days_list,
-                                  vector<string_view>& plan_profits_list,
-                                  asset&  max_profit_token,
-                                  uint64_t& max_days)
-  {
-      asset profit_token(0, interest_symbol);
-      uint64_t days = 0;
-      for (int i = 0; i < plan_days_list.size(); i++) {
-          days = to_uint64(plan_days_list[i], "plan_days parse int error");
-          CHECKC( days > 0, err::PARAM_ERROR, "plan days must be greater than 0" )
-          CHECKC( days <= YEAR_DAYS, err::PARAM_ERROR, "plan days must be less than 365" )
-          profit_token = asset_from_string(plan_profits_list[i]);
-          CHECKC( profit_token.amount > 0, err::PARAM_ERROR, "plan profit must be greater than 0" )
-          plans_tmp.insert({days, profit_token});
-          if(profit_token > max_profit_token) max_profit_token = profit_token;
-          if(days > max_days)                 max_days = days;
-      }
-      print(22222);
-
-  }
-  
-  void nftone_save::_build_pledge_ntokens(  map<extended_nsymbol, quotas>& pledge_ntokens_tmp,
-                                            const name& ntoken_contract,
-                                            vector<string_view>& nftids)
-  {   
-      extended_nsymbol extended_nsymbol_tmp;
-
-      for (int i = 0; i < nftids.size(); i++) {
-          extended_nsymbol_tmp = extended_nsymbol(nsymbol(to_uint32(nftids[i], "nftid parse int error")), ntoken_contract);
-          int64_t nft_supply = ntoken::get_supply(ntoken_contract, extended_nsymbol_tmp.get_nsymbol());
-          CHECKC( nft_supply>0, err::RECORD_NOT_FOUND, "nft not found: " + to_string(i) )
-          pledge_ntokens_tmp.insert({extended_nsymbol_tmp, quotas()});
-      }
-  }
-  
   void nftone_save::_int_coll_log(const name& account, const uint64_t& account_id, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at) {
       nftone_save::interest_withdraw_log_action act{ _self, { {_self, active_permission} } };
       act.send( account, account_id, campaign_id, quantity, created_at );

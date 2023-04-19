@@ -20,12 +20,6 @@ using namespace wasm::db;
 static constexpr name      SYS_BANK    = "amax.token"_n;
 static constexpr symbol    AMAX_SYMBOL = symbol(symbol_code("AMAX"), 8);
 
-struct tmp_e {
-    uint32_t                      total_quotas;          
-    map<uint16_t, asset>          plans;          
-    map<extended_nsymbol, quotas> pledge_ntokens; 
-};
-
 enum class save_err: uint8_t {
    INTEREST_INSUFFICIENT    = 0,
    QUOTAS_INSUFFICIENT      = 1,
@@ -36,7 +30,8 @@ enum class save_err: uint8_t {
    ENDED                    = 6,
    NOT_START                = 7,
    STARTED                  = 8,
-   NOT_ENDED                = 9
+   NOT_ENDED                = 9,
+   NOT_EMPTY                = 10
 };
 
 class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
@@ -81,8 +76,6 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
                                 vector<asset> &plan_profits_list,
                                 const name &ntoken_contract,
                                 const uint32_t &total_quotas);
-                                
-  ACTION delcampaign(const uint64_t &campaign_id);
   
   /**
   * @brief user claim interest
@@ -141,21 +134,21 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
                                   const uint64_t& begin,
                                   const uint64_t& end);
                                   
-      void _memo_analysis( vector<string_view>& parts, 
-                            const name& from, 
-                            const asset& quantity,
-                            tmp_e& tmp);        
+      // void _memo_analysis( vector<string_view>& parts, 
+      //                       const name& from, 
+      //                       const asset& quantity,
+      //                       tmp_e& tmp);        
                                    
-      void _build_plan( map<uint16_t, asset>& plans_tmp,
-                        const symbol& interest_symbol,
-                        vector<string_view>& plan_days_list,
-                        vector<string_view>& plan_profits_list,
-                        asset& max_profit_token,
-                        uint64_t& max_days);
-                                      
-      void _build_pledge_ntokens( map<extended_nsymbol, quotas>& pledge_ntokens_tmp,
-                                  const name& ntoken_contract,
-                                  vector<string_view>& nftids);   
+      // void _build_plan( map<uint16_t, asset>& plans_tmp,
+      //                   const symbol& interest_symbol,
+      //                   vector<string_view>& plan_days_list,
+      //                   vector<string_view>& plan_profits_list,
+      //                   asset& max_profit_token,
+      //                   uint64_t& max_days);
+                                       
+      // void _build_pledge_ntokens( map<extended_nsymbol, quotas>& pledge_ntokens_tmp,
+      //                             const name& ntoken_contract,
+      //                             vector<string_view>& nftids);   
                                                                     
       void _int_refuel_log(const name& refueller, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
 

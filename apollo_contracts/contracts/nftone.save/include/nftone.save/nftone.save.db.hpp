@@ -44,7 +44,7 @@ GLOBAL_TBL("global") global_t {
     asset crt_campaign_fee                  = asset(1'0000'0000, symbol("AMAX", 8));                                      
     set<name> whitelist;
     set<name> ntoken_contract_required      = {"amax.ntoken"_n};
-    set<name> profit_token_contract_required= {"amax.token"_n, "amax.ntt"_n};
+    set<name> profit_token_contract_required= {"amax.token"_n, "amax.ntt"_n, "amax.mtoken"_n};
 
     EOSLIB_SERIALIZE( global_t, (admin)(last_save_id)
                                 (last_campaign_id)
@@ -76,9 +76,9 @@ SAVE_TBL save_campaign_t {
     map<uint16_t, asset>              plans;
     uint32_t                          total_quotas;
     uint32_t                          quotas_purchased = 0;
-    asset                             interest_available;
-    asset                             interest_redeemed;
-    asset                             interest_expectation;
+    asset                             interest_total;
+    asset                             interest_frozen;
+    asset                             interest_claimed;
     name                              status;                     
     time_point_sec                    begin_at;             
     time_point_sec                    end_at;               
@@ -90,17 +90,17 @@ SAVE_TBL save_campaign_t {
     uint64_t scope()const { return 0; }
     
     uint32_t get_available_quotas()const { return total_quotas - quotas_purchased; }
-    asset    get_total_interest()const { return interest_available + interest_redeemed; }
-    asset    get_refund_interest()const { return interest_available + interest_redeemed - interest_expectation; }
+    asset    get_available_interest()const { return interest_total - interest_claimed; }
+    asset    get_refund_interest()const { return interest_total - interest_frozen; }
 
     typedef multi_index<"savecampaign"_n, save_campaign_t > tbl_t;
 
     EOSLIB_SERIALIZE( save_campaign_t,  (id)(sponsor)(campaign_name)
                                     (campaign_en_name)(campaign_pic)
                                     (pledge_ntokens)(interest_symbol)(plans)
-                                    (total_quotas)(quotas_purchased)(interest_available)
-                                    (interest_redeemed)(interest_expectation)(status) 
-                                    (begin_at) (end_at)(created_at) )
+                                    (total_quotas)(quotas_purchased)(interest_total)
+                                    (interest_frozen)(interest_claimed)(status) 
+                                    (begin_at)(end_at)(created_at) )
 
 };
 
@@ -110,34 +110,37 @@ SAVE_TBL save_account_t {
     uint64_t            id;               //PK
     uint64_t            campaign_id;
     extended_nasset     pledged;          //amount == quotas
-    asset               daily_interest_per_quota;   //daily output interest per quota
-    uint16_t            days;             //pledge days
-    asset               interest_collected;
+    asset               interest_per_quota;   //daily output interest per quota
+    uint16_t            plan_days;             //pledge days
+    asset               total_interest;   //daily output interest per quota
+    asset               interest_claimed;
     time_point_sec      created_at;
     time_point_sec      term_ended_at;
-    time_point_sec      last_collected_at;
+    time_point_sec      last_claimed_at;
   
     save_account_t() {}
     save_account_t(const uint64_t& i): id(i) {}
 
     uint64_t primary_key()const { return id; }
     uint64_t by_campaign()const { return campaign_id; }
-    
-    asset get_daily_interest()const { return daily_interest_per_quota * pledged.quantity.amount; }
-    
-    uint32_t get_term_sec()const { 
-      uint32_t timestamp = time_point_sec(current_time_point()) < term_ended_at ? current_time_point().sec_since_epoch() : term_ended_at.sec_since_epoch();
-      return timestamp - last_collected_at.sec_since_epoch(); 
+        
+    double get_sec_ratio()const { 
+      uint32_t now = time_point_sec(current_time_point()).sec_since_epoch();
+      return (now - created_at.sec_since_epoch()) / (term_ended_at.sec_since_epoch() - created_at.sec_since_epoch());
     }
     
-    asset get_due_interest()const { return ( get_daily_interest() / DAY_SECONDS * (get_term_sec()) ); }
+    // (current - created_at)/(term_ended_at - created_at) * total_interest - interest_claimed
+    asset get_due_interest()const { 
+      int64_t interest = get_sec_ratio() * total_interest.amount - interest_claimed.amount;
+      return asset(interest, total_interest.symbol); 
+    }
 
     typedef multi_index<"saveaccounts"_n, save_account_t,
         indexed_by<"campaignid"_n, const_mem_fun<save_account_t, uint64_t, &save_account_t::by_campaign> >
     > tbl_t;
 
-    EOSLIB_SERIALIZE( save_account_t,   (id)(campaign_id)(pledged)(daily_interest_per_quota)(days)(interest_collected)(created_at)
-                                        (term_ended_at)(last_collected_at) )
+    EOSLIB_SERIALIZE( save_account_t,   (id)(campaign_id)(pledged)(interest_per_quota)(plan_days)(total_interest)
+                                        (interest_claimed)(created_at)(term_ended_at)(last_claimed_at) )
 
 };
 
