@@ -133,12 +133,7 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
                                   const string_view& campaign_pic,
                                   const uint64_t& begin,
                                   const uint64_t& end);
-                                  
-      // void _memo_analysis( vector<string_view>& parts, 
-      //                       const name& from, 
-      //                       const asset& quantity,
-      //                       tmp_e& tmp);        
-                                   
+                                          
       // void _build_plan( map<uint16_t, asset>& plans_tmp,
       //                   const symbol& interest_symbol,
       //                   vector<string_view>& plan_days_list,

@@ -217,9 +217,8 @@ using namespace wasm::safemath;
   * @param to
   * @param quantity
   * @param memo: three formats:
-  *       1) pre_create_campaign : $campaign_name : $campaign_en_name : $campaign_pic : $begin_at : $end_at                             -- pre-creation campaign by transfer fee
-  *       2) create_campaign : $campaign_id : $contract_name : $nftids :  $plan_days : $plan_profit : $quotas                           -- create campaign by transfer interest
-  *       3) increment_interest : $campaign_id                                                                                          -- increment interest
+  *       1) create_campaign : $campaign_name : $campaign_en_name : $campaign_pic : $begin_at : $end_at                             -- pre-creation campaign by transfer fee
+  *       2) refuel : $campaign_id                                                                                                  -- increment interest
   */
  
   void nftone_save::_on_token_transfer( const name &from,
@@ -232,7 +231,7 @@ using namespace wasm::safemath;
 
       auto parts = split( memo, ":" );
 
-      if ( parts.size() == 6 && parts[0] == "create_campaign " ) {
+      if ( parts.size() == 6 && parts[0] == "create_campaign" ) {
         
           CHECKC( get_first_receiver() == SYS_BANK, err::PARAM_ERROR, "token contract invalid" )
           CHECKC( quantity == _gstate.crt_campaign_fee, err::FEE_INSUFFICIENT, "fee insufficient");

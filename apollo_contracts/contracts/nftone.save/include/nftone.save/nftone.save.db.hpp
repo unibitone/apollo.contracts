@@ -69,17 +69,17 @@ SAVE_TBL save_campaign_t {
     uint64_t                          id;
     name                              sponsor;                     
     string                            campaign_name;                
-    string                            campaign_en_name;
-    string                            campaign_pic;
+    string                            campaign_en_name;            //campaign english name
+    string                            campaign_pic;                //campaign picture
     map<extended_nsymbol, quotas>     pledge_ntokens;              //pledge ntokens
     extended_symbol                   interest_symbol;
     map<uint16_t, asset>              plans;
     uint32_t                          total_quotas;
     uint32_t                          quotas_purchased = 0;
-    asset                             interest_total;
-    asset                             interest_frozen;
+    asset                             interest_total;              //prestore total interest
+    asset                             interest_frozen;             //account total interest
     asset                             interest_claimed;
-    name                              status;                     
+    name                              status;                     //campaign status (1)init : fee paid； (2)created : interest transferred
     time_point_sec                    begin_at;             
     time_point_sec                    end_at;               
     time_point_sec                    created_at;    
@@ -107,12 +107,12 @@ SAVE_TBL save_campaign_t {
 //Scope: account
 //Note: record will be deleted upon withdrawal/redemption
 SAVE_TBL save_account_t {
-    uint64_t            id;               //PK
+    uint64_t            id;                   //PK
     uint64_t            campaign_id;
-    extended_nasset     pledged;          //amount == quotas
-    asset               interest_per_quota;   //daily output interest per quota
-    uint16_t            plan_days;             //pledge days
-    asset               total_interest;   //daily output interest per quota
+    extended_nasset     pledged;              //amount == quotas
+    asset               interest_per_quota;   //total interest per quota
+    uint16_t            plan_days;            //pledge days
+    asset               total_interest;       //total interest
     asset               interest_claimed;
     time_point_sec      created_at;
     time_point_sec      term_ended_at;
