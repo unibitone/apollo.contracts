@@ -28,7 +28,7 @@ using namespace eosio;
 #define SAVE_TBL struct [[eosio::table, eosio::contract("nftonesave11")]]
 #define GLOBAL_TBL(name) struct [[eosio::table(name), eosio::contract("nftonesave11")]]
 // static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
-static constexpr uint64_t  DAY_SECONDS = 60;
+static constexpr uint64_t  DAY_SECONDS = 3;
 static constexpr uint64_t  YEAR_SECONDS = 365 * 24 * 60 * 60;
 static constexpr uint64_t  YEAR_DAYS   = 365;
 
@@ -126,12 +126,14 @@ SAVE_TBL save_account_t {
         
     double get_sec_ratio()const { 
       uint32_t now = time_point_sec(current_time_point()).sec_since_epoch();
-      return (now - created_at.sec_since_epoch()) / (term_ended_at.sec_since_epoch() - created_at.sec_since_epoch());
+      return double(now - created_at.sec_since_epoch()) / double(term_ended_at.sec_since_epoch() - created_at.sec_since_epoch());
     }
     
     // (current - created_at)/(term_ended_at - created_at) * total_interest - interest_claimed
     asset get_due_interest()const { 
       int64_t interest = get_sec_ratio() * total_interest.amount - interest_claimed.amount;
+      print(get_sec_ratio());
+      print(interest);
       return asset(interest, total_interest.symbol); 
     }
 

@@ -103,8 +103,11 @@ using namespace wasm::safemath;
       CHECKC( need_interest <= campaign.interest_total, save_err::INTEREST_INSUFFICIENT, "interest insufficient" )
       
       campaign.total_quotas = total_quotas;
-      if(campaign.status == campaign_status::CREATED)
-        campaign.end_at = end_at;
+      if(campaign.status == campaign_status::CREATED){
+          campaign.end_at = end_at;
+      }else{
+          campaign.status = campaign_status::CREATED;
+      }
       _db.set(campaign);
   }
 
@@ -123,6 +126,8 @@ using namespace wasm::safemath;
       CHECKC( save_acct.term_ended_at > save_acct.last_claimed_at, save_err::INTEREST_COLLECTED, "interest already collected" )
 
       auto elapsed_sec = now.sec_since_epoch() - save_acct.last_claimed_at.sec_since_epoch();
+      print(now.sec_since_epoch());
+      print(save_acct.last_claimed_at.sec_since_epoch());
       CHECKC( elapsed_sec > DAY_SECONDS, save_err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
       
       save_campaign_t campaign( save_acct.campaign_id );
@@ -268,7 +273,6 @@ using namespace wasm::safemath;
               campaign.interest_frozen      = asset(0, quantity.symbol);
               campaign.interest_symbol      = extended_symbol(quantity.symbol, get_first_receiver());
               campaign.interest_total       = quantity;
-              campaign.status               = campaign_status::CREATED;
           } else {
               campaign.interest_total       += quantity;
           }
