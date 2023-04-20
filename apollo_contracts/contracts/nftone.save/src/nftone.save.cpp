@@ -136,7 +136,6 @@ using namespace wasm::safemath;
       CHECKC( interest_due.amount > 0, err::NOT_POSITIVE, "interest due amount is zero" )
       CHECKC( campaign.get_available_interest() > interest_due, err::NOT_POSITIVE, "insufficient available interest to collect" )
       TRANSFER( campaign.interest_symbol.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
-      print(interest_due)
       save_acct.interest_claimed    += interest_due;
       save_acct.last_claimed_at     = now;
       _db.set( owner.value, save_acct );

@@ -125,7 +125,7 @@ SAVE_TBL save_account_t {
     uint64_t by_campaign()const { return campaign_id; }
         
     double get_sec_ratio()const { 
-      uint32_t now = time_point_sec(current_time_point()).sec_since_epoch();
+      uint32_t now = time_point_sec(current_time_point()) > term_ended_at ? term_ended_at.sec_since_epoch() : time_point_sec(current_time_point()).sec_since_epoch();
       return double(now - created_at.sec_since_epoch()) / double(term_ended_at.sec_since_epoch() - created_at.sec_since_epoch());
     }
     
