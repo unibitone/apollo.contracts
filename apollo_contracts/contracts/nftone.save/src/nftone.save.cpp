@@ -320,6 +320,7 @@ using namespace wasm::safemath;
           save_acct.pledged                     = extended_quantity;
           save_acct.interest_per_quota          = campaign.plans[days] * days;
           save_acct.plan_days                   = days;
+          save_acct.total_interest              = campaign.plans[days] * days * quantity.amount;
           save_acct.interest_claimed            = asset(0, campaign.interest_symbol.get_symbol());
           save_acct.term_ended_at               = now + days * DAY_SECONDS;
           save_acct.created_at                  = now;
