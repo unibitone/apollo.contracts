@@ -126,8 +126,7 @@ using namespace wasm::safemath;
       CHECKC( save_acct.term_ended_at > save_acct.last_claimed_at, save_err::INTEREST_COLLECTED, "interest already collected" )
 
       auto elapsed_sec = now.sec_since_epoch() - save_acct.last_claimed_at.sec_since_epoch();
-      print(now.sec_since_epoch());
-      print(save_acct.last_claimed_at.sec_since_epoch());
+ 
       CHECKC( elapsed_sec > DAY_SECONDS, save_err::TIME_PREMATURE, "less than 24 hours since last interest collection time" )
       
       save_campaign_t campaign( save_acct.campaign_id );
@@ -137,7 +136,7 @@ using namespace wasm::safemath;
       CHECKC( interest_due.amount > 0, err::NOT_POSITIVE, "interest due amount is zero" )
       CHECKC( campaign.get_available_interest() > interest_due, err::NOT_POSITIVE, "insufficient available interest to collect" )
       TRANSFER( campaign.interest_symbol.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
-      
+      print(interest_due)
       save_acct.interest_claimed    += interest_due;
       save_acct.last_claimed_at     = now;
       _db.set( owner.value, save_acct );

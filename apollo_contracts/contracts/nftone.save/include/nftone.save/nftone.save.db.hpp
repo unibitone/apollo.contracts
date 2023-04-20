@@ -132,8 +132,6 @@ SAVE_TBL save_account_t {
     // (current - created_at)/(term_ended_at - created_at) * total_interest - interest_claimed
     asset get_due_interest()const { 
       int64_t interest = get_sec_ratio() * total_interest.amount - interest_claimed.amount;
-      print(get_sec_ratio());
-      print(interest);
       return asset(interest, total_interest.symbol); 
     }
 
