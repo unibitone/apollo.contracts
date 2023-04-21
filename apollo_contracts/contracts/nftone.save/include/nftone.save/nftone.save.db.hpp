@@ -28,13 +28,15 @@ using namespace eosio;
 #define SAVE_TBL struct [[eosio::table, eosio::contract("nftonesave11")]]
 #define GLOBAL_TBL(name) struct [[eosio::table(name), eosio::contract("nftonesave11")]]
 // static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
-static constexpr uint64_t  DAY_SECONDS = 3;
+static constexpr uint64_t  DAY_SECONDS = 5;
 static constexpr uint64_t  YEAR_SECONDS = 365 * 24 * 60 * 60;
 static constexpr uint64_t  YEAR_DAYS   = 365;
 
 namespace campaign_status {
     static constexpr eosio::name INIT               = "init"_n;
     static constexpr eosio::name CREATED            = "created"_n;
+    static constexpr eosio::name CANCELLED          = "cancelled"_n;
+    static constexpr eosio::name ENDED              = "ended"_n;
 };
 
 GLOBAL_TBL("global") global_t {

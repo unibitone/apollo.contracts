@@ -111,6 +111,9 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
 
   ACTION intcolllog(const name& account, const uint64_t& account_id, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
   using interest_withdraw_log_action = eosio::action_wrapper<"intcolllog"_n, &nftone_save::intcolllog>; 
+  
+  ACTION delcamlog(const uint64_t& campaign_id, const name &status, const time_point& created_at);
+  using del_campaign_log_action = eosio::action_wrapper<"delcamlog"_n, &nftone_save::delcamlog>; 
 
   private:
       global_singleton     _global;
@@ -148,6 +151,7 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
       void _int_refuel_log(const name& refueller, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
 
       void _int_coll_log(const name& account, const uint64_t& account_id, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
-
+      
+      void _del_campaign_log(const uint64_t& campaign_id, const name& status, const time_point& created_at);
 };
 } //namespace amax

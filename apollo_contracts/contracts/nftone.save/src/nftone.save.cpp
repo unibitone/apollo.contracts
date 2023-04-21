@@ -183,6 +183,7 @@ using namespace wasm::safemath;
           TRANSFER( campaign.interest_symbol.get_contract(), owner, campaign.interest_total, "cancel campaign: " + to_string(campaign_id) )
       }
       _db.del( campaign );
+      _del_campaign_log(campaign_id, campaign_status::CANCELLED, current_time_point());
   }
   
   void nftone_save::refundint(const name& issuer, const name& owner, const uint64_t& campaign_id) {
@@ -201,6 +202,7 @@ using namespace wasm::safemath;
           TRANSFER( campaign.interest_symbol.get_contract(), owner, refund_interest, "refund interest, campaign: " + to_string(campaign_id) )
       }
       _db.del( campaign );
+      _del_campaign_log(campaign_id, campaign_status::ENDED, current_time_point());
   }
   
   void nftone_save::intcolllog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
@@ -211,6 +213,10 @@ using namespace wasm::safemath;
   void nftone_save::intrefuellog(const name& refueler, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at) {
       require_auth(get_self());
       require_recipient(refueler);
+  }
+
+  void nftone_save::delcamlog(const uint64_t& campaign_id, const name &status, const time_point& created_at) {
+      require_auth(get_self());
   }
   
   /**
@@ -366,5 +372,10 @@ using namespace wasm::safemath;
   void nftone_save::_int_refuel_log(const name& refueler, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at) {
       nftone_save::intrefuellog_action act{ _self, { {_self, active_permission} } };
       act.send( refueler, campaign_id, quantity, created_at );
+  }
+  
+  void nftone_save::_del_campaign_log(const uint64_t& campaign_id, const name& status, const time_point& created_at) {
+      nftone_save::del_campaign_log_action act{ _self, { {_self, active_permission} } };
+      act.send( campaign_id, status, created_at );
   }
 } //namespace amax
