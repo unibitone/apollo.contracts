@@ -25,7 +25,6 @@ static constexpr uint16_t  PCT_BOOST   = 10000;
 static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
 static constexpr uint64_t  YEAR_DAYS   = 365;
 
-
 enum class err: uint8_t {
    NONE                 = 0,
    RECORD_NOT_FOUND     = 1,

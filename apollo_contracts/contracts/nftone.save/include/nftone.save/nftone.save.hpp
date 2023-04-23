@@ -19,6 +19,7 @@ using namespace wasm::db;
 
 static constexpr name      SYS_BANK    = "amax.token"_n;
 static constexpr symbol    AMAX_SYMBOL = symbol(symbol_code("AMAX"), 8);
+static set<name>  whitelist   = {"testuser1"_n, "merchantx"_n, "frank12345o"_n, "aplobrtfltwg"_n, "111111111112"_n, "amaxtestt111"_n};
 
 enum class save_err: uint8_t {
    INTEREST_INSUFFICIENT    = 0,
@@ -34,7 +35,7 @@ enum class save_err: uint8_t {
    NOT_EMPTY                = 10
 };
 
-class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
+class [[eosio::contract("nftonesave12")]] nftone_save : public contract {
    public:
       using contract::contract;
 
@@ -50,11 +51,13 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
   /**
   * @brief set global
   *
-  * @param account  the account that can create campaign
   * @param ntoken_contract  nft issued by contract that can be used to participate in campaign.
   * @param profit_token_contract  tokens issued by contract that can be used as a benefit.
   */
-  ACTION setglobal(const set<name> &account, const set<name> &ntoken_contract, const set<name> &profit_token_contract ); 
+  ACTION init( const set<name> &ntoken_contract, 
+                const set<name> &profit_token_contract, 
+                const uint8_t &nft_size_limit, 
+                const uint8_t &plan_size_limit);
   
   [[eosio::on_notify("*::transfer")]]
   void ontransfer();
@@ -70,12 +73,18 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
   * @param plan_profits_list  set of planned profits.
   * @param ntoken_contract   nft issued by contract that can be used to participate in campaign.
   */
-  ACTION setcampaign(const name &sponsor, const uint64_t &campaign_id, 
-                                vector<uint64_t> &nftids, const time_point_sec &end_at, 
-                                vector<uint16_t> &plan_days_list, 
-                                vector<asset> &plan_profits_list,
-                                const name &ntoken_contract,
-                                const uint32_t &total_quotas);
+  ACTION setcampaign(const name &sponsor,
+                    const uint64_t &campaign_id, 
+                    const vector<uint64_t> &nftids, 
+                    const vector<uint16_t> &plan_days_list, 
+                    const vector<asset> &plan_profits_list,
+                    const name &ntoken_contract,
+                    const uint32_t &total_quotas,
+                    const string &campaign_name_cn,
+                    const string &campaign_name_en,
+                    const string &campaign_pic_url,
+                    const uint32_t &begin_at,
+                    const uint32_t &end_at);
   
   /**
   * @brief user claim interest
@@ -84,7 +93,7 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
   * @param owner  users participating in the campaign.
   * @param save_id  save account id.
   */
-  ACTION claim(const name& issuer, const name& owner, const uint64_t& save_id);
+  ACTION collectint(const name& issuer, const name& owner, const uint64_t& save_id);
   
   /**
   * @brief user redeem nft
@@ -102,19 +111,13 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
   * @param owner  users participating in the campaign.
   * @param campaign_id  campaign id.
   */
-  ACTION cnlcampaign(const name& issuer, const name& owner, const uint64_t& campaign_id);
+  ACTION cancelcamp(const name& issuer, const name& owner, const uint64_t& campaign_id);
   
   ACTION refundint(const name& issuer, const name& owner, const uint64_t& campaign_id);
   
-  ACTION intrefuellog(const name& refueller,const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
-  using intrefuellog_action = eosio::action_wrapper<"intrefuellog"_n, &nftone_save::intrefuellog>; 
-
   ACTION intcolllog(const name& account, const uint64_t& account_id, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
-  using interest_withdraw_log_action = eosio::action_wrapper<"intcolllog"_n, &nftone_save::intcolllog>; 
+  using interest_collect_log_action = eosio::action_wrapper<"intcolllog"_n, &nftone_save::intcolllog>; 
   
-  ACTION delcamlog(const uint64_t& campaign_id, const name &status, const time_point& created_at);
-  using del_campaign_log_action = eosio::action_wrapper<"delcamlog"_n, &nftone_save::delcamlog>; 
-
   private:
       global_singleton     _global;
       global_t             _gstate;
@@ -123,35 +126,28 @@ class [[eosio::contract("nftonesave11")]] nftone_save : public contract {
       void _on_token_transfer( const name &from,
                                   const name &to,
                                   const asset &quantity,
-                                  const string &memo);
+                                  const string &memo );
 
       void _on_ntoken_transfer( const name& from,
                                   const name& to,
                                   const std::vector<nasset>& assets,
                                   const string& memo );
                                   
-      void _pre_create_campaign( const name& from,
-                                  const string_view& campaign_name,
-                                  const string_view& campaign_en_name,
-                                  const string_view& campaign_pic,
-                                  const uint64_t& begin,
-                                  const uint64_t& end);
-                                          
-      // void _build_plan( map<uint16_t, asset>& plans_tmp,
-      //                   const symbol& interest_symbol,
-      //                   vector<string_view>& plan_days_list,
-      //                   vector<string_view>& plan_profits_list,
-      //                   asset& max_profit_token,
-      //                   uint64_t& max_days);
-                                       
-      // void _build_pledge_ntokens( map<extended_nsymbol, quotas>& pledge_ntokens_tmp,
-      //                             const name& ntoken_contract,
-      //                             vector<string_view>& nftids);   
-                                                                    
-      void _int_refuel_log(const name& refueller, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
-
+      void _create_campaign( const name& from );
+      
+      bool _is_whitelist( const name& account );     
+                            
+      void _set_campaign( save_campaign_t &campaign, 
+                          const vector<uint64_t> &nftids,  
+                          const name &ntoken_contract,
+                          const vector<uint16_t> &plan_days_list, 
+                          const vector<asset> &plan_profits_list,
+                          const uint32_t &total_quotas,
+                          const string_view &campaign_name_cn,
+                          const string_view &campaign_name_en,
+                          const string_view &campaign_pic_url );
+                                                                                                  
       void _int_coll_log(const name& account, const uint64_t& account_id, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
       
-      void _del_campaign_log(const uint64_t& campaign_id, const name& status, const time_point& created_at);
 };
 } //namespace amax
