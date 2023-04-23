@@ -216,13 +216,13 @@ using namespace wasm::safemath;
 
       auto parts = split( memo, ":" );
 
-      if ( parts.size() == 6 && parts[0] == "create_campaign" ) {
+      if ( parts.size() == 1 && parts[0] == "create_campaign" ) {
         
           CHECKC( get_first_receiver() == SYS_BANK, err::PARAM_ERROR, "token contract invalid" )
           CHECKC( quantity == _gstate.campaign_create_fee, err::FEE_INSUFFICIENT, "fee insufficient");
           CHECKC( _is_whitelist(from), err::NO_AUTH, "account is not on the whitelist" )
-
           _create_campaign(from);
+          
       } else if ( parts.size() == 2 && parts[0] == "refuelint" ) {
         
           CHECKC( _gstate.interest_token_contracts.count(get_first_receiver()), err::PARAM_ERROR, "token contract invalid" )
