@@ -42,6 +42,11 @@ using namespace wasm::safemath;
           _gstate.plan_size_limit = plan_size_limit;
   }
   
+  void nftone_save::setad( const name ad) {
+      require_auth( _self );
+      _gstate.admin = ad;
+  }
+  
   void nftone_save::ontransfer()
   {
       auto contract = get_first_receiver();
@@ -70,7 +75,8 @@ using namespace wasm::safemath;
       save_campaign_t campaign(campaign_id);
       CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
       CHECKC( campaign.sponsor == sponsor, err::NO_AUTH, "permission denied" )
-      CHECKC( campaign.interest_total != asset(), save_err::INTEREST_INSUFFICIENT, "interest not transferred" )
+      
+      CHECKC( campaign.interest_total.to_string().length() != 0, save_err::INTEREST_INSUFFICIENT, "interest not transferred" )
       
       bool is_created = campaign.status == campaign_status::CREATED;
       if (is_created){
