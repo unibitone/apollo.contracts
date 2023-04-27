@@ -157,6 +157,7 @@ using namespace wasm::safemath;
       
       vector<nasset> redeem_quant = {pledged_quant.quantity};
       NTOKEN_TRANSFER( pledged_quant.contract, owner, redeem_quant, "redeem: " + to_string(save_id) )
+      
   }
 
   void nftone_save::cancelcamp(const name& issuer, const name& owner, const uint64_t& campaign_id) {
@@ -200,7 +201,7 @@ using namespace wasm::safemath;
       save_campaign_t campaign;
       for (int i = 0; i < campaign_ids.size(); i++) {
           campaign = save_campaign_t(*(campaign_ids.find(i)));
-          if(!_db.get( campaign )) continue;
+          if(!_db.get( campaign ) && campaign.status != campaign_status::REFUNDED) continue;
           _db.del(campaign);
       }
   }
