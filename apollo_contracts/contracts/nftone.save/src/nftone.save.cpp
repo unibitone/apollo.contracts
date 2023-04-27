@@ -207,7 +207,8 @@ using namespace wasm::safemath;
       save_campaign_t campaign;
       for (int i = 0; i < campaign_ids.size(); i++) {
           campaign = save_campaign_t(*(campaign_ids.find(i)));
-          if(!_db.get( campaign ) && campaign.status != campaign_status::REFUNDED) continue;
+          if(!_db.get( campaign )) continue;
+          if(campaign.status != campaign_status::REFUNDED) continue;
           _db.del(campaign);
       }
   }
