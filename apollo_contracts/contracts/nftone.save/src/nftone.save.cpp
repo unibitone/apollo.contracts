@@ -202,11 +202,11 @@ using namespace wasm::safemath;
   }
   
   
-  void nftone_save::delcampaign(const set<uint64_t>& campaign_ids) {
+  void nftone_save::delcampaign(const vector<uint64_t>& campaign_ids) {
       require_auth(_gstate.admin);
       save_campaign_t campaign;
       for (int i = 0; i < campaign_ids.size(); i++) {
-          campaign = save_campaign_t(*(campaign_ids.find(i)));
+          campaign = save_campaign_t(campaign_ids[i]);
           if(!_db.get( campaign )) continue;
           if(campaign.status != campaign_status::REFUNDED) continue;
           _db.del(campaign);

@@ -117,7 +117,7 @@ class [[eosio::contract("nftonesave12")]] nftone_save : public contract {
   
   ACTION refundint(const name& issuer, const name& owner, const uint64_t& campaign_id);
   
-  ACTION delcampaign(const set<uint64_t>& campaign_ids);
+  ACTION delcampaign(const vector<uint64_t>& campaign_ids);
   
   ACTION intcolllog(const name& account, const uint64_t& account_id, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
   using interest_collect_log_action = eosio::action_wrapper<"intcolllog"_n, &nftone_save::intcolllog>; 
