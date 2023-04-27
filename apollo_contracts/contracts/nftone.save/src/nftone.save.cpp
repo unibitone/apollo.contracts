@@ -31,8 +31,11 @@ using namespace wasm::safemath;
       for (auto &token_contract : profit_token_contract) {
           CHECKC( is_account(token_contract), err::ACCOUNT_INVALID, "profit_token_contract not found: " + token_contract.to_string() )
       }
-      _gstate.nft_contracts.insert(ntoken_contract.begin(), ntoken_contract.end());
-      _gstate.interest_token_contracts.insert(profit_token_contract.begin(), profit_token_contract.end());
+      CHECKC( plan_size_limit > 0, err::PARAM_ERROR, "plan_size_limit must be greater than 0" )
+      CHECKC( nft_size_limit > 0, err::PARAM_ERROR, "nft_size_limit must be greater than 0" )
+
+      _gstate.nft_contracts             = ntoken_contract;
+      _gstate.interest_token_contracts  = profit_token_contract;
       if(nft_size_limit > 0)
           _gstate.nft_size_limit = nft_size_limit;
       if(plan_size_limit > 0)
@@ -67,6 +70,7 @@ using namespace wasm::safemath;
       save_campaign_t campaign(campaign_id);
       CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
       CHECKC( campaign.sponsor == sponsor, err::NO_AUTH, "permission denied" )
+      CHECKC( campaign.interest_total != asset(), save_err::INTEREST_INSUFFICIENT, "interest not transferred" )
       
       bool is_created = campaign.status == campaign_status::CREATED;
       if (is_created){
@@ -77,7 +81,7 @@ using namespace wasm::safemath;
           CHECKC( end_at - begin_at <= YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 365 days");
           CHECKC( end_at > current_time_point().sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
       }
-          
+      
       CHECKC( nftids.size() + campaign.pledge_ntokens.size() <= _gstate.nft_size_limit, err::PARAM_ERROR, "nft size should be less than or equal to 5");
       CHECKC( plan_days_list.size() + campaign.plans.size() <= _gstate.plan_size_limit, err::PARAM_ERROR, "plan size should be less than or equal to 5");
       CHECKC( plan_days_list.size() == plan_profits_list.size(), err::PARAM_ERROR, "days and profit_tokens size mismatch" );
@@ -117,7 +121,7 @@ using namespace wasm::safemath;
 
       auto interest_due = save_acct.calc_due_interest();
       CHECKC( interest_due.amount > 0, err::NOT_POSITIVE, "interest due amount is zero" )
-      ASSERT( campaign.calc_available_interest() > interest_due )
+      ASSERT( campaign.calc_available_interest() >= interest_due )
       
       TRANSFER( campaign.interest_symbol.get_contract(), owner, interest_due, "interest: " + to_string(save_id) )
       
@@ -163,11 +167,10 @@ using namespace wasm::safemath;
       
       save_campaign_t campaign(campaign_id);
       CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
+      CHECKC( campaign.status == campaign_status::CREATED, err::STATE_MISMATCH, "status mismatch" )
       CHECKC( campaign.sponsor == owner, err::NO_AUTH, "permission denied" )
       CHECKC( campaign.begin_at > current_time_point(), save_err::STARTED, "campaign already started" )
-      if(campaign.status == campaign_status::CREATED){
-          TRANSFER( campaign.interest_symbol.get_contract(), owner, campaign.interest_total, "cancel campaign: " + to_string(campaign_id) )
-      }
+      TRANSFER( campaign.interest_symbol.get_contract(), owner, campaign.interest_total, "cancel campaign: " + to_string(campaign_id) )
       
       _db.del( campaign );
   }
@@ -187,7 +190,19 @@ using namespace wasm::safemath;
       if(campaign.status == campaign_status::CREATED && refund_interest.amount > 0){
           TRANSFER( campaign.interest_symbol.get_contract(), owner, refund_interest, "refund interest, campaign: " + to_string(campaign_id) )
       }
-      _db.del( campaign );
+      campaign.status = campaign_status::REFUNDED;
+      _db.set( campaign );
+  }
+  
+  
+  void nftone_save::delcampaign(const set<uint64_t>& campaign_ids) {
+      require_auth(_gstate.admin);
+      save_campaign_t campaign;
+      for (int i = 0; i < campaign_ids.size(); i++) {
+          campaign = save_campaign_t(*(campaign_ids.find(i)));
+          if(!_db.get( campaign )) continue;
+          _db.del(campaign);
+      }
   }
   
   void nftone_save::intcolllog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
@@ -291,7 +306,7 @@ using namespace wasm::safemath;
           save_acct.interest_collected          = asset(0, campaign.interest_symbol.get_symbol());
           save_acct.term_ended_at               = now + days * DAY_SECONDS;
           save_acct.created_at                  = now;
-          save_acct.last_collected_at             = now;
+          save_acct.last_collected_at           = now;
           _db.set( from.value, save_acct, false );
           
           campaign.interest_alloted  += asset(quantity.amount * days * campaign.plans[days].amount, campaign.interest_symbol.get_symbol());

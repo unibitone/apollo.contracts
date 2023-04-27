@@ -35,6 +35,7 @@ static constexpr uint64_t  YEAR_DAYS   = 365;
 namespace campaign_status {
     static constexpr eosio::name INIT               = "init"_n;
     static constexpr eosio::name CREATED            = "created"_n;
+    static constexpr eosio::name REFUNDED           = "refunded"_n;
 };
 
 GLOBAL_TBL("global") global_t {

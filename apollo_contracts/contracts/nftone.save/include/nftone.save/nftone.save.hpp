@@ -19,7 +19,7 @@ using namespace wasm::db;
 
 static constexpr name      SYS_BANK    = "amax.token"_n;
 static constexpr symbol    AMAX_SYMBOL = symbol(symbol_code("AMAX"), 8);
-static set<name>  whitelist   = {"testuser1"_n, "merchantx"_n, "frank12345o"_n, "aplobrtfltwg"_n, "111111111112"_n, "amaxtestt111"_n};
+static set<name>  whitelist   = {"testuser1"_n, "merchantx"_n, "frank12345o"_n, "aplobrtfltwg"_n, "111111111112"_n, "amaxtestt111"_n, "aplio1lv1vit"_n, "user1"_n, "12345abcde12"_n};
 
 enum class save_err: uint8_t {
    INTEREST_INSUFFICIENT    = 0,
@@ -114,6 +114,8 @@ class [[eosio::contract("nftonesave12")]] nftone_save : public contract {
   ACTION cancelcamp(const name& issuer, const name& owner, const uint64_t& campaign_id);
   
   ACTION refundint(const name& issuer, const name& owner, const uint64_t& campaign_id);
+  
+  ACTION delcampaign(const set<uint64_t>& campaign_ids);
   
   ACTION intcolllog(const name& account, const uint64_t& account_id, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
   using interest_collect_log_action = eosio::action_wrapper<"intcolllog"_n, &nftone_save::intcolllog>; 
