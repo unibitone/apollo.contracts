@@ -25,10 +25,9 @@ using namespace eosio;
 
 #define HASH256(str) sha256(const_cast<char*>(str.c_str()), str.size())
 
-#define SAVE_TBL struct [[eosio::table, eosio::contract("nftonesave12")]]
-#define GLOBAL_TBL(name) struct [[eosio::table(name), eosio::contract("nftonesave12")]]
-// static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
-static constexpr uint64_t  DAY_SECONDS = 60;
+#define SAVE_TBL struct [[eosio::table, eosio::contract("nftone.save")]]
+#define GLOBAL_TBL(name) struct [[eosio::table(name), eosio::contract("nftone.save")]]
+static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
 static constexpr uint64_t  YEAR_SECONDS = 365 * 24 * 60 * 60;
 static constexpr uint64_t  YEAR_DAYS   = 365;
 
@@ -39,7 +38,7 @@ namespace campaign_status {
 };
 
 GLOBAL_TBL("global") global_t {
-    name admin                              = "armoniaadmin"_n;
+    name admin                              = "nftone.admin"_n;
     uint64_t last_save_id                   = 0;
     uint64_t last_campaign_id               = 0;
     uint8_t nft_size_limit                  = 5;

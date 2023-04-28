@@ -19,7 +19,7 @@ using namespace wasm::db;
 
 static constexpr name      SYS_BANK    = "amax.token"_n;
 static constexpr symbol    AMAX_SYMBOL = symbol(symbol_code("AMAX"), 8);
-static set<name>  whitelist   = {"testuser1"_n, "merchantx"_n, "frank12345o"_n, "aplobrtfltwg"_n, "111111111112"_n, "amaxtestt111"_n, "aplio1lv1vit"_n, "user1"_n, "12345abcde12"_n};
+static set<name>  whitelist   = {"frank12345oo"_n, "nftonemanage"_n};
 
 enum class save_err: uint8_t {
    INTEREST_INSUFFICIENT    = 0,
@@ -35,7 +35,7 @@ enum class save_err: uint8_t {
    NOT_EMPTY                = 10
 };
 
-class [[eosio::contract("nftonesave12")]] nftone_save : public contract {
+class [[eosio::contract("nftone.save")]] nftone_save : public contract {
    public:
       using contract::contract;
 
@@ -58,9 +58,7 @@ class [[eosio::contract("nftonesave12")]] nftone_save : public contract {
                 const set<name> &profit_token_contract, 
                 const uint8_t &nft_size_limit, 
                 const uint8_t &plan_size_limit);
-  
-  ACTION setad( const name ad);
-   
+     
   [[eosio::on_notify("*::transfer")]]
   void ontransfer();
   

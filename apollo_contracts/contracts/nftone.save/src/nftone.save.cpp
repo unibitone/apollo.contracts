@@ -42,11 +42,6 @@ using namespace wasm::safemath;
           _gstate.plan_size_limit = plan_size_limit;
   }
   
-  void nftone_save::setad( const name ad) {
-      require_auth( _self );
-      _gstate.admin = ad;
-  }
-  
   void nftone_save::ontransfer()
   {
       auto contract = get_first_receiver();
