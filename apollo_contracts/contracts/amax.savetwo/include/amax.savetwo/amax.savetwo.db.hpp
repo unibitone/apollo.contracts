@@ -61,6 +61,7 @@ SAVE_TBL save_plan_t {
     string                            plan_name;                
     extended_symbol                   interest_symbol;                //interest token symbol
     extended_symbol                   stake_symbol;                   //stake token symbol
+    extended_symbol                   lquidity_extsym;      
     uint16_t                          plan_days;                      //plan days
     asset                             plan_profit;                    //plan profit per quota
     uint32_t                          total_quotas;                   //total quotas
@@ -86,10 +87,12 @@ SAVE_TBL save_plan_t {
     typedef multi_index<"saveplan"_n, save_plan_t > tbl_t;
 
     EOSLIB_SERIALIZE( save_plan_t,  (id)(plan_name)                    
-                                    (interest_symbol)(stake_symbol)(plan_days)(plan_profit)
-                                    (total_quotas)(quotas_purchased)(stake_per_quota)
+                                    (interest_symbol)(stake_symbol)
+                                    (lquidity_extsym)(plan_days)
+                                    (plan_profit)(total_quotas)
+                                    (quotas_purchased)(stake_per_quota)
                                     (apl_per_quota)(interest_total)
-                                    (interest_collected)(type)
+                                    (interest_collected)(type)(status)
                                     (begin_at)(end_at)(created_at) )
 
 };
@@ -100,6 +103,7 @@ SAVE_TBL save_account_t {
     uint64_t            id;                   //PK
     uint64_t            plan_id;
     asset               pledged;              //amount
+    extended_symbol     lquidity_extsym;      
     uint32_t            quotas;
     uint16_t            plan_term_days;       //pledge days
     asset               interest_alloted;     //alloted interest
@@ -129,8 +133,11 @@ SAVE_TBL save_account_t {
 
     typedef multi_index<"saveaccounts"_n, save_account_t> tbl_t;
 
-    EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(pledged)(quotas)(plan_term_days)(interest_alloted)
-                                        (interest_collected)(term_ended_at)(last_collected_at)(created_at) )
+    EOSLIB_SERIALIZE( save_account_t,   (id)(plan_id)(pledged)
+                                        (lquidity_extsym)(quotas)
+                                        (plan_term_days)(interest_alloted)
+                                        (interest_collected)(term_ended_at)
+                                        (last_collected_at)(created_at) )
 
 };
 

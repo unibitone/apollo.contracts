@@ -75,7 +75,11 @@ using namespace wasm::safemath;
       CHECKC( end_at - plan.begin_at.sec_since_epoch() <= (YEAR_SECONDS * 3), err::PARAM_ERROR, "the duration of the plan cannot exceed 3 years");
       CHECKC( plan.total_quotas < total_quotas, err::PARAM_ERROR, "total_quotas must be greater than before" );
       
-      _set_plan(plan, plan_name, total_quotas, apl_per_quota, end_at);
+      plan.plan_name        = plan_name;
+      plan.total_quotas     = total_quotas;
+      plan.apl_per_quota    = apl_per_quota;
+      plan.end_at           = time_point_sec(end_at);
+      _db.set(plan);
   }
 
   void amax_savetwo::setstatus(const uint64_t &plan_id, const name &status) {
@@ -228,34 +232,21 @@ using namespace wasm::safemath;
       auto cid = _gstate.last_plan_id++;
       save_plan_t plan(cid);
 
-      plan.plan_name      = plan_name;
+      plan.plan_name          = plan_name;
       plan.plan_days          = plan_days;
       plan.plan_profit        = plan_profit;
       plan.stake_symbol       = stake_symbol;
       plan.interest_symbol    = interest_symbol;
       plan.total_quotas       = total_quotas;
       plan.stake_per_quota    = stake_per_quota;
-      plan.apl_per_quota   = apl_per_quota;
+      plan.apl_per_quota      = apl_per_quota;
       plan.begin_at           = time_point_sec(begin_at);
-      plan.begin_at           = time_point_sec(end_at);
+      plan.end_at             = time_point_sec(end_at);
       plan.interest_total     = asset(0, interest_symbol.get_symbol());
       plan.interest_collected = asset(0, interest_symbol.get_symbol());
+      plan.created_at         = current_time_point();
       _db.set(plan);
   }
-  
-  void amax_savetwo::_set_plan( save_plan_t &plan, 
-                                    const string &plan_name, 
-                                    const uint32_t &total_quotas,
-                                    const asset &apl_per_quota,
-                                    const uint32_t &end_at) {
-                                      
-      plan.plan_name        = plan_name;
-      plan.total_quotas     = total_quotas;
-      plan.apl_per_quota = apl_per_quota;
-      plan.end_at           = time_point_sec(end_at);
-      _db.set(plan);
-  }
-
   
   void amax_savetwo::_create_save_act(save_plan_t &plan,
                                       const asset &quantity,
@@ -297,7 +288,6 @@ using namespace wasm::safemath;
                   parent, apl,
                   "amax save #2 allot: " + to_string( sid ));
       }
-
   }
   
   void amax_savetwo::_int_coll_log(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity) {

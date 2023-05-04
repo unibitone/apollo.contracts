@@ -128,13 +128,7 @@ class [[eosio::contract("amaxsavetwo1")]] amax_savetwo : public contract {
                               const asset &apl_per_quota,
                               const uint32_t &begin_at,
                               const uint32_t &end_at);
-      
-      void _set_plan( save_plan_t &plan, 
-                          const string &plan_name, 
-                          const uint32_t &total_quotas,
-                          const asset &apl_per_quota,
-                          const uint32_t &end_at);
-                                  
+
       void _create_save_act(save_plan_t &plan,
                             const asset &quantity,
                             const name &from,                                 
