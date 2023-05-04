@@ -132,12 +132,11 @@ using namespace wasm::safemath;
           plan.interest_total       += quantity;
           _db.set(plan);
           
-      } else if ( parts.size() == 4 && parts[0] == "pledge" )  {
+      } else if ( parts.size() == 3 && parts[0] == "pledge" )  {
           auto now  = time_point_sec(current_time_point());
-
-          uint64_t plan_id = to_uint64(parts[1], "plan_id parse int error");
-          auto days            = to_uint64(parts[2], "days parse uint error");
-          auto quotas          = to_uint64(parts[3], "quotas parse uint error");
+          
+          auto plan_id  = to_uint64(parts[1], "plan_id parse int error");
+          auto quotas   = to_uint64(parts[2], "quotas parse uint error");
 
           save_plan_t plan(plan_id);
           CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string( plan_id ) ) 
