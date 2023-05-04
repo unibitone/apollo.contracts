@@ -50,7 +50,7 @@ class [[eosio::contract("amaxsavetwo1")]] amax_savetwo : public contract {
       _global.set( _gstate, get_self() ); 
     }
 
-  ACTION init();
+  ACTION init(const uint64_t &farm_id);
   
   
   ACTION createplan(const string &plan_name, 
@@ -132,7 +132,6 @@ class [[eosio::contract("amaxsavetwo1")]] amax_savetwo : public contract {
       void _create_save_act(save_plan_t &plan,
                             const asset &quantity,
                             const name &from,                                 
-                            const uint64_t &days,
                             const uint32_t &quotas,
                             const time_point_sec &now);
                             

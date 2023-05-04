@@ -22,8 +22,9 @@ using namespace wasm::safemath;
     {	aplink::farm::allot_action act{ bank, { {_self, active_perm} } };\
 			act.send( land_id, customer, quantity , memo );}
 
-  void amax_savetwo::init() {
+  void amax_savetwo::init(const uint64_t &farm_id) {
       require_auth( _self );
+      _gstate.farm_lease_id = farm_id;
   }
 
   void amax_savetwo::createplan(const string &plan_name, 
@@ -109,7 +110,7 @@ using namespace wasm::safemath;
   * @param quantity
   * @param memo: three formats:
   *       1) refuel : $plan_id                    -- increment interest
-  *       2) pledge : $plan_id : $days : quotas   -- gain interest by pledge token 
+  *       2) pledge : $plan_id : quotas   -- gain interest by pledge token 
   */
   void amax_savetwo::ontransfer(const name &from,
                                 const name &to,
@@ -149,9 +150,8 @@ using namespace wasm::safemath;
           CHECKC( plan.calc_available_quotas() > 0 && quotas < plan.calc_available_quotas(), amaxsavetwo_err::QUOTAS_INSUFFICIENT, "quotas insufficient" )
           CHECKC( plan.end_at >= now, amaxsavetwo_err::ENDED, "the plan already ended" )
           CHECKC( plan.begin_at <= now, amaxsavetwo_err::NOT_START, "the plan not start" )
-          CHECKC( plan.plan_days == days, err::PARAM_ERROR, "days mismatch" )
 
-          _create_save_act(plan, quantity, from, days, quotas, now);
+          _create_save_act(plan, quantity, from, quotas, now);
           
       } else {
           CHECKC( false, err::PARAM_ERROR, "param error" );
@@ -251,7 +251,6 @@ using namespace wasm::safemath;
   void amax_savetwo::_create_save_act(save_plan_t &plan,
                                       const asset &quantity,
                                       const name &from,                                 
-                                      const uint64_t &days,
                                       const uint32_t &quotas,
                                       const time_point_sec &now) {
       auto sid = _gstate.last_save_id++;
@@ -259,10 +258,10 @@ using namespace wasm::safemath;
       save_acct.plan_id                     = plan.id;
       save_acct.pledged                     = quantity;
       save_acct.quotas                      = quotas;
-      save_acct.plan_term_days              = days;
+      save_acct.plan_term_days              = plan.plan_days;
       save_acct.interest_alloted            = plan.plan_profit * quotas;
       save_acct.interest_collected          = asset(0, plan.interest_symbol.get_symbol());
-      save_acct.term_ended_at               = now + days * DAY_SECONDS;
+      save_acct.term_ended_at               = now + plan.plan_days * DAY_SECONDS;
       save_acct.created_at                  = now;
       save_acct.last_collected_at           = now;
       _db.set( from.value, save_acct, false );
