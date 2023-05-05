@@ -50,7 +50,8 @@ using namespace wasm::safemath;
       CHECKC( plan_days > 0, err::PARAM_ERROR, "plan days must be greater than 0" )
       CHECKC( plan_profit.amount > 0, err::PARAM_ERROR, "plan profit must be greater than 0" )
       CHECKC( plan_profit.symbol == interest_symbol.get_symbol(), err::PARAM_ERROR, "profit asset symbol mismatch" )
-          
+      CHECKC( plan_name.size() < 128 && plan_name.size() > 0, err::PARAM_ERROR, "plan name greater than 0 bytes and less than 128 bytes" );
+   
       asset stake_supply = token::get_supply(stake_symbol.get_contract(), stake_symbol.get_symbol().code());
       CHECKC( stake_supply.amount > 0, err::SYMBOL_MISMATCH, "stake token not exists" );
     
@@ -74,7 +75,8 @@ using namespace wasm::safemath;
       
       CHECKC( end_at > plan.begin_at.sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
       CHECKC( end_at - plan.begin_at.sec_since_epoch() <= (YEAR_SECONDS * 3), err::PARAM_ERROR, "the duration of the plan cannot exceed 3 years");
-      CHECKC( plan.total_quotas < total_quotas, err::PARAM_ERROR, "total_quotas must be greater than before" );
+      CHECKC( plan.total_quotas <= total_quotas, err::PARAM_ERROR, "total_quotas must be greater than or equal to before" );
+      CHECKC( plan_name.size() < 128 && plan_name.size() > 0, err::PARAM_ERROR, "plan name greater than 0 bytes and less than 128 bytes" );
       
       plan.plan_name        = plan_name;
       plan.total_quotas     = total_quotas;
