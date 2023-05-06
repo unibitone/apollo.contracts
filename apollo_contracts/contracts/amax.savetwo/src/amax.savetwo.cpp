@@ -77,7 +77,7 @@ using namespace wasm::safemath;
       CHECKC( end_at - plan.begin_at.sec_since_epoch() <= (YEAR_SECONDS * 3), err::PARAM_ERROR, "the duration of the plan cannot exceed 3 years");
       CHECKC( plan.total_quotas <= total_quotas, err::PARAM_ERROR, "total_quotas must be greater than or equal to before" );
       CHECKC( plan_name.size() < 128 && plan_name.size() > 0, err::PARAM_ERROR, "plan name greater than 0 bytes and less than 128 bytes" );
-      CHECKC( apl_per_quota >= APL_LIMIT , err::PARAM_ERROR, "apl should be more than zero " );
+      CHECKC( apl_per_quota >= APL_LIMIT, err::PARAM_ERROR, "apl should be more than zero " );
       
       plan.plan_name        = plan_name;
       plan.total_quotas     = total_quotas;
@@ -149,7 +149,7 @@ using namespace wasm::safemath;
           CHECKC( quotas > 0 && quantity / quotas >= plan.stake_per_quota, err::PARAM_ERROR, "token amount invalid" )      
           CHECKC( quantity.symbol == plan.stake_symbol.get_symbol(), err::PARAM_ERROR, "token symbol invalid" )
           CHECKC( get_first_receiver() == plan.stake_symbol.get_contract(), err::PARAM_ERROR, "token contract invalid" )
-          CHECKC( plan.calc_available_quotas() > 0 && quotas < plan.calc_available_quotas(), amaxsavetwo_err::QUOTAS_INSUFFICIENT, "quotas insufficient" )
+          CHECKC( plan.calc_available_quotas() > 0 && quotas <= plan.calc_available_quotas(), amaxsavetwo_err::QUOTAS_INSUFFICIENT, "quotas insufficient" )
           CHECKC( plan.end_at >= now, amaxsavetwo_err::ENDED, "the plan already ended" )
           CHECKC( plan.begin_at <= now, amaxsavetwo_err::NOT_START, "the plan not start" )
 
