@@ -31,9 +31,9 @@ using namespace wasm::safemath;
                                 const name &type, 
                                 const extended_symbol &stake_symbol,
                                 const extended_symbol &interest_symbol,
-                                const uint16_t &plan_days, 
+                                const int32_t &plan_days, 
                                 const asset &plan_profit,
-                                const uint32_t &total_quotas,
+                                const int64_t &total_quotas,
                                 const asset &stake_per_quota,
                                 const asset &apl_per_quota,
                                 const uint32_t &begin_at,
@@ -65,7 +65,7 @@ using namespace wasm::safemath;
 
   void amax_savetwo::setplan(const uint64_t &plan_id,
                                 const string &plan_name, 
-                                const uint32_t &total_quotas,
+                                const int64_t &total_quotas,
                                 const asset &apl_per_quota,
                                 const uint32_t &end_at) {
       require_auth(_gstate.admin);
@@ -77,6 +77,7 @@ using namespace wasm::safemath;
       CHECKC( end_at - plan.begin_at.sec_since_epoch() <= (YEAR_SECONDS * 3), err::PARAM_ERROR, "the duration of the plan cannot exceed 3 years");
       CHECKC( plan.total_quotas <= total_quotas, err::PARAM_ERROR, "total_quotas must be greater than or equal to before" );
       CHECKC( plan_name.size() < 128 && plan_name.size() > 0, err::PARAM_ERROR, "plan name greater than 0 bytes and less than 128 bytes" );
+      CHECKC( apl_per_quota >= APL_LIMIT , err::PARAM_ERROR, "apl should be more than zero " );
       
       plan.plan_name        = plan_name;
       plan.total_quotas     = total_quotas;

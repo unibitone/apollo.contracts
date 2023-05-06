@@ -57,9 +57,9 @@ class [[eosio::contract("amaxsavetwo1")]] amax_savetwo : public contract {
                                 const name &type, 
                                 const extended_symbol &stake_symbol,
                                 const extended_symbol &interest_symbol,
-                                const uint16_t &plan_days, 
+                                const int32_t &plan_days, 
                                 const asset &plan_profits,
-                                const uint32_t &total_quotas,
+                                const int64_t &total_quotas,
                                 const asset &stake_per_quota,
                                 const asset &apl_per_quota,
                                 const uint32_t &begin_at,
@@ -77,7 +77,7 @@ class [[eosio::contract("amaxsavetwo1")]] amax_savetwo : public contract {
   
   ACTION setplan(const uint64_t &plan_id,
                       const string &plan_name, 
-                      const uint32_t &total_quotas,
+                      const int64_t &total_quotas,
                       const asset &apl_per_quota,
                       const uint32_t &end_at);
                       
