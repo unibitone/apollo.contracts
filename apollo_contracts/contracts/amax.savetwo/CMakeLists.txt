@@ -1,4 +1,4 @@
-add_contract(amaxsavetwo1 amax.savetwo ${CMAKE_CURRENT_SOURCE_DIR}/src/amax.savetwo.cpp)
+add_contract(apollo.save amax.savetwo ${CMAKE_CURRENT_SOURCE_DIR}/src/amax.savetwo.cpp)
 
 target_include_directories(amax.savetwo
    PUBLIC

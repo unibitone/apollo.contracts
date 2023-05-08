@@ -36,7 +36,7 @@ enum class amaxsavetwo_err: uint8_t {
    NOT_EMPTY                = 10
 };
 
-class [[eosio::contract("amaxsavetwo1")]] amax_savetwo : public contract {
+class [[eosio::contract("apollo.save")]] amax_savetwo : public contract {
    public:
       using contract::contract;
 
