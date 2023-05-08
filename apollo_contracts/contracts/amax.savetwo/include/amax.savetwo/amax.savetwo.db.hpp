@@ -26,8 +26,7 @@ using namespace eosio;
 
 #define SAVE_TBL struct [[eosio::table, eosio::contract("amaxsavetwo1")]]
 #define GLOBAL_TBL(name) struct [[eosio::table(name), eosio::contract("amaxsavetwo1")]]
-// static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
-static constexpr uint64_t  DAY_SECONDS = 60;
+static constexpr uint64_t  DAY_SECONDS = 24 * 60 * 60;
 static constexpr uint64_t  YEAR_SECONDS = 365 * 24 * 60 * 60;
 static constexpr uint64_t  YEAR_DAYS   = 365;
 
