@@ -82,7 +82,7 @@ class [[eosio::contract("apollo.save")]] amax_savetwo : public contract {
                       const uint32_t &end_at);
                       
   ACTION setbegin(const uint64_t &plan_id,
-                              const uint32_t &begin_at);
+                  const time_point_sec &begin_at);
                                   
   ACTION setstatus(const uint64_t &plan_id, const name &status);
   

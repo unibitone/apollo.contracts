@@ -87,16 +87,16 @@ using namespace wasm::safemath;
   }
   
    void amax_savetwo::setbegin(const uint64_t &plan_id,
-                              const uint32_t &begin_at) {
+                                const time_point_sec &begin_at) {
       require_auth(_gstate.admin);
       
       save_plan_t plan(plan_id);
       CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string( plan_id ) )
       
-      CHECKC( plan.end_at.sec_since_epoch() > begin_at, err::PARAM_ERROR, "begin time should be less than end time");
-      CHECKC( plan.end_at.sec_since_epoch() - begin_at <= (YEAR_SECONDS * 3), err::PARAM_ERROR, "the duration of the plan cannot exceed 3 years");
+      CHECKC( plan.end_at > begin_at, err::PARAM_ERROR, "begin time should be less than end time");
+      CHECKC( plan.end_at.sec_since_epoch() - begin_at.sec_since_epoch() <= (YEAR_SECONDS * 3), err::PARAM_ERROR, "the duration of the plan cannot exceed 3 years");
       
-      plan.begin_at           = time_point_sec(begin_at);
+      plan.begin_at           = begin_at;
       _db.set(plan);
   }
 
