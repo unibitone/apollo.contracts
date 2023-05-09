@@ -85,6 +85,20 @@ using namespace wasm::safemath;
       plan.end_at           = time_point_sec(end_at);
       _db.set(plan);
   }
+  
+   void amax_savetwo::setbegin(const uint64_t &plan_id,
+                              const uint32_t &begin_at) {
+      require_auth(_gstate.admin);
+      
+      save_plan_t plan(plan_id);
+      CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string( plan_id ) )
+      
+      CHECKC( plan.end_at.sec_since_epoch() > begin_at, err::PARAM_ERROR, "begin time should be less than end time");
+      CHECKC( plan.end_at.sec_since_epoch() - begin_at <= (YEAR_SECONDS * 3), err::PARAM_ERROR, "the duration of the plan cannot exceed 3 years");
+      
+      plan.begin_at           = time_point_sec(begin_at);
+      _db.set(plan);
+  }
 
   void amax_savetwo::setstatus(const uint64_t &plan_id, const name &status) {
       require_auth( _gstate.admin );
@@ -113,7 +127,8 @@ using namespace wasm::safemath;
   * @param quantity
   * @param memo: three formats:
   *       1) refuel : $plan_id                    -- increment interest
-  *       2) pledge : $plan_id : quotas   -- gain interest by pledge token 
+  *       2) pledge : $plan_id : quotas           -- gain interest by pledge token 
+  *       3) redeem : $save_id                    -- redeem aset by transfer liquid staking tokens
   */
   void amax_savetwo::ontransfer(const name &from,
                                 const name &to,
@@ -136,6 +151,26 @@ using namespace wasm::safemath;
           _db.set(plan);
           
       } else if ( parts.size() == 3 && parts[0] == "pledge" )  {
+          auto now  = time_point_sec(current_time_point());
+          
+          auto plan_id  = to_uint64(parts[1], "plan_id parse int error");
+          auto quotas   = to_uint64(parts[2], "quotas parse uint error");
+
+          save_plan_t plan(plan_id);
+          CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string( plan_id ) ) 
+          CHECKC( plan.status == plan_status::RUNNING, err::PAUSED, "temporarily suspended" )
+   
+          CHECKC( quantity.amount > 0, err::PARAM_ERROR, "token amount invalid" )      
+          CHECKC( quotas > 0 && quantity / quotas >= plan.stake_per_quota, err::PARAM_ERROR, "token amount invalid" )      
+          CHECKC( quantity.symbol == plan.stake_symbol.get_symbol(), err::PARAM_ERROR, "token symbol invalid" )
+          CHECKC( get_first_receiver() == plan.stake_symbol.get_contract(), err::PARAM_ERROR, "token contract invalid" )
+          CHECKC( plan.calc_available_quotas() > 0 && quotas <= plan.calc_available_quotas(), amaxsavetwo_err::QUOTAS_INSUFFICIENT, "quotas insufficient" )
+          CHECKC( plan.end_at >= now, amaxsavetwo_err::ENDED, "the plan already ended" )
+          CHECKC( plan.begin_at <= now, amaxsavetwo_err::NOT_START, "the plan not start" )
+
+          _create_save_act(plan, quantity, from, quotas, now);
+          
+      }else if ( parts.size() == 3 && parts[0] == "pledge" )  {
           auto now  = time_point_sec(current_time_point());
           
           auto plan_id  = to_uint64(parts[1], "plan_id parse int error");
