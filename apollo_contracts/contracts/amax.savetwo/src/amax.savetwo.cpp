@@ -86,8 +86,12 @@ using namespace wasm::safemath;
       _db.set(plan);
   }
   
-   void amax_savetwo::setbegin(const uint64_t &plan_id,
-                                const time_point_sec &begin_at) {
+   void amax_savetwo::modifyplan(const uint64_t &plan_id,
+                                const time_point_sec &begin_at,
+                                const asset &profit, 
+                                const asset &stake_per_quota,
+                                const asset &apl_per_quota,
+                                const int64_t &total_quotas) {
       require_auth(_gstate.admin);
       
       save_plan_t plan(plan_id);
@@ -95,8 +99,16 @@ using namespace wasm::safemath;
       
       CHECKC( plan.end_at > begin_at, err::PARAM_ERROR, "begin time should be less than end time");
       CHECKC( plan.end_at.sec_since_epoch() - begin_at.sec_since_epoch() <= (YEAR_SECONDS * 3), err::PARAM_ERROR, "the duration of the plan cannot exceed 3 years");
+      CHECKC( profit.amount > 0, err::PARAM_ERROR, "profit must be greater than zero" );
+      CHECKC( stake_per_quota.amount > 0, err::PARAM_ERROR, "stake_per_quota must be greater than zero" );
+      CHECKC( apl_per_quota.amount > 0, err::PARAM_ERROR, "apl_per_quota must be greater than zero" );
+      CHECKC( total_quotas > 0, err::PARAM_ERROR, "total_quotas must be greater than zero" );
       
       plan.begin_at           = begin_at;
+      plan.plan_profit        = profit;
+      plan.apl_per_quota      = apl_per_quota;
+      plan.stake_per_quota    = stake_per_quota;
+      plan.total_quotas       = total_quotas;
       _db.set(plan);
   }
 

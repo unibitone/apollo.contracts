@@ -81,8 +81,12 @@ class [[eosio::contract("apollo.save")]] amax_savetwo : public contract {
                       const asset &apl_per_quota,
                       const uint32_t &end_at);
                       
-  ACTION setbegin(const uint64_t &plan_id,
-                  const time_point_sec &begin_at);
+  ACTION modifyplan(const uint64_t &plan_id,
+                                const time_point_sec &begin_at,
+                                const asset &profit, 
+                                const asset &stake_per_quota,
+                                const asset &apl_per_quota,
+                                const int64_t &total_quotas);
                                   
   ACTION setstatus(const uint64_t &plan_id, const name &status);
   
