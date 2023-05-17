@@ -170,26 +170,6 @@ using namespace wasm::safemath;
 
           _create_save_act(plan, quantity, from, quotas, now);
           
-      }else if ( parts.size() == 3 && parts[0] == "pledge" )  {
-          auto now  = time_point_sec(current_time_point());
-          
-          auto plan_id  = to_uint64(parts[1], "plan_id parse int error");
-          auto quotas   = to_uint64(parts[2], "quotas parse uint error");
-
-          save_plan_t plan(plan_id);
-          CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string( plan_id ) ) 
-          CHECKC( plan.status == plan_status::RUNNING, err::PAUSED, "temporarily suspended" )
-   
-          CHECKC( quantity.amount > 0, err::PARAM_ERROR, "token amount invalid" )      
-          CHECKC( quotas > 0 && quantity / quotas >= plan.stake_per_quota, err::PARAM_ERROR, "token amount invalid" )      
-          CHECKC( quantity.symbol == plan.stake_symbol.get_symbol(), err::PARAM_ERROR, "token symbol invalid" )
-          CHECKC( get_first_receiver() == plan.stake_symbol.get_contract(), err::PARAM_ERROR, "token contract invalid" )
-          CHECKC( plan.calc_available_quotas() > 0 && quotas <= plan.calc_available_quotas(), amaxsavetwo_err::QUOTAS_INSUFFICIENT, "quotas insufficient" )
-          CHECKC( plan.end_at >= now, amaxsavetwo_err::ENDED, "the plan already ended" )
-          CHECKC( plan.begin_at <= now, amaxsavetwo_err::NOT_START, "the plan not start" )
-
-          _create_save_act(plan, quantity, from, quotas, now);
-          
       } else {
           CHECKC( false, err::PARAM_ERROR, "param error" );
       }
