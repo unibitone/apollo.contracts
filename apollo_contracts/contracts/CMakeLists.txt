@@ -18,3 +18,4 @@ set(VOTING_ICON_URI   "voting.png#db28cd3db6e62d4509af3644ce7d377329482a14bb4bfa
 # add_subdirectory(nftone.save)
 # add_subdirectory(amax.share)
 add_subdirectory(amax.savetwo)
+add_subdirectory(amaxnft.mine)
