@@ -220,23 +220,14 @@ using namespace wasm::safemath;
       CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
       CHECKC( campaign.sponsor == sponsor, err::NO_AUTH, "permission denied" )
       CHECKC( campaign.interest_total.to_string().length() != 0, save_err::INTEREST_INSUFFICIENT, "interest not transferred" )
-      
-      bool is_created = campaign.status == campaign_status::CREATED;
-      if (is_created){
-          CHECKC( end_at > campaign.begin_at.sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
-          CHECKC( end_at - campaign.begin_at.sec_since_epoch() <= YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 365 days");
-      } else {
-          CHECKC( end_at > begin_at, err::PARAM_ERROR, "begin time should be less than end time");
-          CHECKC( end_at - begin_at <= YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 365 days");
-          CHECKC( end_at > current_time_point().sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
-      }
+    
+      CHECKC( end_at > begin_at, err::PARAM_ERROR, "begin time should be less than end time");
+      CHECKC( end_at - begin_at <= YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 365 days");
+      CHECKC( end_at > current_time_point().sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
 
-      if (is_created){
-          campaign.end_at           = time_point_sec(end_at);
-      } else {
-          campaign.begin_at         = time_point_sec(begin_at);
-          campaign.end_at           = time_point_sec(end_at);
-      }
+      campaign.begin_at         = time_point_sec(begin_at);
+      campaign.end_at           = time_point_sec(end_at);
+      
       _db.set(campaign);
   }
   
