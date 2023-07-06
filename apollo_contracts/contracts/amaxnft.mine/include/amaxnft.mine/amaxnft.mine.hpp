@@ -107,6 +107,16 @@ class [[eosio::contract("amaxnft.mine")]] amaxnft_mine : public contract {
                       const uint32_t& quotas_purchased, const time_point& created_at);
    using interest_refuel_log_action = eosio::action_wrapper<"intrefulog"_n, &amaxnft_mine::intrefulog>;
 
+   /**
+    * @brief set campaign begin or end time
+    *
+    * @param sponsor  campaign sponsor.
+    * @param campaign_id  campaign id.
+    * @param begin_at  campaign begin time.
+    * @param end_at  campaign end time.
+    */
+    ACTION setcamptime(const name &sponsor, const uint64_t &campaign_id, const uint32_t &begin_at, const uint32_t &end_at);
+
  private:
    global_singleton _global;
    global_t         _gstate;

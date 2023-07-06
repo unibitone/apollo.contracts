@@ -190,6 +190,26 @@ using namespace wasm::safemath;
       require_recipient(account);
   }
   
+
+  void amaxnft_mine::setcamptime(const name &sponsor, const uint64_t &campaign_id, const uint32_t &begin_at, const uint32_t &end_at) {
+      require_auth(sponsor);
+      
+      save_campaign_t campaign(campaign_id);
+      CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
+      CHECKC( campaign.sponsor == sponsor, err::NO_AUTH, "permission denied" )
+      
+      bool is_created = campaign.status == campaign_status::CREATED or campaign.status == campaign_status::APPEND;
+      CHECKC( end_at > begin_at, err::PARAM_ERROR, "begin time should be less than end time");
+      CHECKC( end_at - begin_at <= 5 * YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 5 * 365 days");
+      CHECKC( end_at > current_time_point().sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
+    
+      campaign.begin_at = time_point_sec(begin_at);
+      campaign.end_at   = time_point_sec(end_at);
+
+      _db.set(campaign);
+  }
+
+
   /**
   * @brief transfer token
   *
