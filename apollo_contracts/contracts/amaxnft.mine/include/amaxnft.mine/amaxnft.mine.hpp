@@ -19,7 +19,7 @@ using namespace wasm::db;
 
 static constexpr name   SYS_BANK    = "amax.token"_n;
 static constexpr symbol AMAX_SYMBOL = symbol(symbol_code("AMAX"), 8);
-static set<name>        whitelist   = { "frank12345oo"_n, "nftonemanage"_n, "admin"_n, "merchantx"_n, "user1"_n, "usera"_n };
+static set<name>        whitelist   = { "frank12345oo"_n, "nftonemanage"_n };
 
 enum class save_err : uint8_t {
    INTEREST_INSUFFICIENT  = 0,

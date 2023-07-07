@@ -39,7 +39,7 @@ GLOBAL_TBL("global") global_t {
    name      admin                    = "nftone.admin"_n; // admin account
    uint64_t  last_save_id             = 1;   // last save_account_t.id
    uint64_t  last_campaign_id         = 1;   // last save_campaign_t.id
-   uint8_t   nft_size_limit           = 12;  // nft id list limit
+   uint8_t   nft_size_limit           = 50;  // nft id list limit
    uint8_t   plan_size_limit          = 1;   // plan day limit
    asset     campaign_create_fee      = asset(1'0000'0000, symbol("AMAX", 8)); // create campaign fee 
    set<name> nft_contracts            = { "amax.ntoken"_n };                   // supply nft contract
