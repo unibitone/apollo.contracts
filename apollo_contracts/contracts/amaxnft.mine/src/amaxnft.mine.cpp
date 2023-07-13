@@ -235,7 +235,7 @@ using namespace wasm::safemath;
         
           CHECKC( get_first_receiver() == SYS_BANK, err::PARAM_ERROR, "token contract invalid" )
           CHECKC( quantity == _gstate.campaign_create_fee, err::FEE_INSUFFICIENT, "fee insufficient");
-          CHECKC( _is_whitelist(from), err::NO_AUTH, "account is not on the whitelist" )
+          // CHECKC( _is_whitelist(from), err::NO_AUTH, "account is not on the whitelist" )
           _create_campaign(from);
           
       } else if ( parts.size() == 2 && parts[0] == "refuelint" ) {
