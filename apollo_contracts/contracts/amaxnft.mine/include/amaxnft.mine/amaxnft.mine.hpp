@@ -52,7 +52,7 @@ class [[eosio::contract("amaxnft.mine")]] amaxnft_mine : public contract {
     * @param profit_token_contract  tokens issued by contract that can be used as a benefit.
     */
    ACTION init(const set<name>& ntoken_contract, const set<name>& profit_token_contract, const uint8_t& nft_size_limit,
-               const uint8_t& plan_size_limit);
+               const uint8_t& plan_size_limit, const asset &campaign_create_fee);
 
    [[eosio::on_notify("*::transfer")]] void ontransfer();
 

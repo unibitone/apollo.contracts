@@ -41,7 +41,7 @@ GLOBAL_TBL("global") global_t {
    uint64_t  last_campaign_id         = 1;   // last save_campaign_t.id
    uint8_t   nft_size_limit           = 50;  // nft id list limit
    uint8_t   plan_size_limit          = 1;   // plan day limit
-   asset     campaign_create_fee      = asset(1'0000'0000, symbol("AMAX", 8)); // create campaign fee 
+   asset     campaign_create_fee      = asset(5'0000'0000, symbol("AMAX", 8)); // create campaign fee 
    set<name> nft_contracts            = { "amax.ntoken"_n };                   // supply nft contract
    set<name> interest_token_contracts = { "amax.token"_n, "amax.ntt"_n, "amax.mtoken"_n }; // supply interest token list
 
