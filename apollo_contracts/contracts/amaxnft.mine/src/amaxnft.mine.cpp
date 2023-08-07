@@ -23,7 +23,8 @@ using namespace wasm::safemath;
   void amaxnft_mine::init( const set<name> &ntoken_contract, 
                           const set<name> &profit_token_contract, 
                           const uint8_t &nft_size_limit, 
-                          const uint8_t &plan_size_limit) {
+                          const uint8_t &plan_size_limit,
+                          const asset &campaign_create_fee) {
       require_auth( _self );
 
       for (auto &ncontract : ntoken_contract) {
@@ -35,10 +36,14 @@ using namespace wasm::safemath;
       CHECKC( nft_size_limit > 0, err::PARAM_ERROR, "nft_size_limit must be greater than 0" )
       CHECKC( plan_size_limit > 0, err::PARAM_ERROR, "plan_size_limit must be greater than 0" )
 
+      CHECKC( campaign_create_fee.is_valid() > 0, err::PARAM_ERROR, "invalid campaign_create_fee" )
+      CHECKC( campaign_create_fee.amount > 0, err::PARAM_ERROR, "campaign_create_fee amount must be greater than 0" )
+
       _gstate.nft_contracts             = ntoken_contract;
       _gstate.interest_token_contracts  = profit_token_contract;
       _gstate.nft_size_limit            = nft_size_limit;
       _gstate.plan_size_limit           = plan_size_limit;
+      _gstate.campaign_create_fee       = campaign_create_fee;
   }
   
   // user transfer nft pledge
