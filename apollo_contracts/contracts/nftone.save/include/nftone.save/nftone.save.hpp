@@ -58,7 +58,7 @@ class [[eosio::contract("nftone.save")]] nftone_save : public contract {
                 const uint8_t &nft_size_limit, 
                 const uint8_t &plan_size_limit);
   
-  ACTION setfee( const asset& fee); 
+  ACTION setfee(const asset& fee); 
 
   [[eosio::on_notify("*::transfer")]]
   void ontransfer();

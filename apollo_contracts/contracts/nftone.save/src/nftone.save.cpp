@@ -41,7 +41,7 @@ using namespace wasm::safemath;
           _gstate.plan_size_limit = plan_size_limit;
   }
   
-  void nftone_save::setfee( const asset& fee) {
+  void nftone_save::setfee(const asset& fee) {
       require_auth( _gstate.admin );
       CHECKC( fee.amount > 0, err::PARAM_ERROR, "fee must be more than 0" )
       _gstate.campaign_create_fee = fee;
