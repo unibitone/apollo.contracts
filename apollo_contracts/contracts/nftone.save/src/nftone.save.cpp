@@ -7,7 +7,6 @@
 
 static constexpr eosio::name active_permission{"active"_n};
 
-
 namespace amax {
 
 using namespace std;
@@ -40,6 +39,12 @@ using namespace wasm::safemath;
           _gstate.nft_size_limit = nft_size_limit;
       if(plan_size_limit > 0)
           _gstate.plan_size_limit = plan_size_limit;
+  }
+  
+  void nftone_save::setfee( const asset& fee) {
+      require_auth( _gstate.admin );
+      CHECKC( fee.amount > 0, err::PARAM_ERROR, "fee must be more than 0" )
+      _gstate.campaign_create_fee = fee;
   }
   
   void nftone_save::ontransfer()
@@ -239,6 +244,7 @@ using namespace wasm::safemath;
           CHECKC( get_first_receiver() == SYS_BANK, err::PARAM_ERROR, "token contract invalid" )
           CHECKC( quantity == _gstate.campaign_create_fee, err::FEE_INSUFFICIENT, "fee insufficient");
           CHECKC( _is_whitelist(from), err::NO_AUTH, "account is not on the whitelist" )
+          
           _create_campaign(from);
           
       } else if ( parts.size() == 2 && parts[0] == "refuelint" ) {
@@ -250,7 +256,7 @@ using namespace wasm::safemath;
           CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
           CHECKC( campaign.sponsor == from, err::NO_AUTH, "permission denied" )
           
-          if(campaign.status == campaign_status::INIT){
+          if (campaign.status == campaign_status::INIT) {
               campaign.interest_collected   = asset(0, quantity.symbol);
               campaign.interest_alloted     = asset(0, quantity.symbol);
               campaign.interest_symbol      = extended_symbol(quantity.symbol, get_first_receiver());
@@ -333,7 +339,9 @@ using namespace wasm::safemath;
   
   bool nftone_save::_is_whitelist( const name& account )
   {
-      return whitelist.count(account) ? true : false;
+      // return whitelist.count(account) ? true : false;
+      return true;
+
   }
   
   void nftone_save::_set_campaign( save_campaign_t &campaign, 
