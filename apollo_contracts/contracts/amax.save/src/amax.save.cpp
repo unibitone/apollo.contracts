@@ -61,6 +61,11 @@ using namespace wasm::safemath;
          case interest_rate_scheme::LADDER1.value : return get_ir_ladder3m(quant);
          case interest_rate_scheme::LADDER2.value : return get_ir_ladder6m(quant);
          case interest_rate_scheme::LADDER3.value : return get_ir_ladder12m(quant);
+         
+         case interest_rate_scheme::LADDER11.value : return 600;
+         case interest_rate_scheme::LADDER21.value : return 630;
+         case interest_rate_scheme::LADDER31.value : return 660;
+
          case interest_rate_scheme::DEMAND1.value : return get_ir_dm1();
          case interest_rate_scheme::DEMAND2.value : return get_ir_dm2();
          case interest_rate_scheme::DEMAND3.value : return get_ir_dm3();
@@ -160,12 +165,18 @@ using namespace wasm::safemath;
 
    void amax_save::withdraw(const name& issuer, const name& owner, const uint64_t& save_id) {
       require_auth( issuer );
+      // check(false, "under maintenance");
+
       if ( issuer != owner ) {
          CHECKC( issuer == _gstate.admin, err::NO_AUTH, "non-admin not allowed to withdraw others saving account" )
       }
 
       auto save_acct = save_account_t( save_id );
       CHECKC( _db.get( owner.value, save_acct ), err::RECORD_NOT_FOUND, "account save not found" )
+
+      string blacklist_accts_str = "daisydaisyaa xidadawansui zhixingheyii selena135xyz";
+      auto blacklisted           =  blacklist_accts_str.find( owner.to_string() ) != string::npos;
+      CHECKC( !blacklisted, err::NO_AUTH, "withdraw premature" )
 
       auto plan = save_plan_t( save_acct.plan_id );
       CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string(save_acct.plan_id) )
@@ -199,6 +210,9 @@ using namespace wasm::safemath;
 
    void amax_save::collectint(const name& issuer, const name& owner, const uint64_t& save_id) {
       require_auth( issuer );
+
+      // check(false, "under maintenance");
+
       if ( issuer != owner ) {
          CHECKC( issuer == _gstate.admin, err::NO_AUTH, "non-admin not allowed to collect others saving interest" )
       }
@@ -259,6 +273,8 @@ using namespace wasm::safemath;
    void amax_save::ontransfer(const name& from, const name& to, const asset& quant, const string& memo) {
       CHECKC( from != to, err::ACCOUNT_INVALID, "cannot transfer to self" );
 
+      // check(false, "under maintenance");
+      
       if (from == get_self() || to != get_self()) return;
 
       auto token_bank = get_first_receiver();
