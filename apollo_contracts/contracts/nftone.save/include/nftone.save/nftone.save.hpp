@@ -20,7 +20,6 @@ using namespace wasm::db;
 static constexpr name      SYS_BANK    = "amax.token"_n;
 static constexpr symbol    AMAX_SYMBOL = symbol(symbol_code("AMAX"), 8);
 static set<name>  whitelist   = {"frank12345oo"_n, "nftonemanage"_n};
-
 enum class save_err: uint8_t {
    INTEREST_INSUFFICIENT    = 0,
    QUOTAS_INSUFFICIENT      = 1,
@@ -58,7 +57,9 @@ class [[eosio::contract("nftone.save")]] nftone_save : public contract {
                 const set<name> &profit_token_contract, 
                 const uint8_t &nft_size_limit, 
                 const uint8_t &plan_size_limit);
-     
+  
+  ACTION setfee(const asset& fee); 
+
   [[eosio::on_notify("*::transfer")]]
   void ontransfer();
   
@@ -119,6 +120,16 @@ class [[eosio::contract("nftone.save")]] nftone_save : public contract {
   
   ACTION intcolllog(const name& account, const uint64_t& account_id, const uint64_t& campaign_id, const asset &quantity, const time_point& created_at);
   using interest_collect_log_action = eosio::action_wrapper<"intcolllog"_n, &nftone_save::intcolllog>; 
+
+  /**
+   * @brief set campaign begin or end time
+   *
+   * @param sponsor  campaign sponsor.
+   * @param campaign_id  campaign id.
+   * @param begin_at  campaign begin time.
+   * @param end_at  campaign end time.
+   */
+   ACTION setcamptime(const name &sponsor, const uint64_t &campaign_id, const uint32_t &begin_at, const uint32_t &end_at);
   
   private:
       global_singleton     _global;
