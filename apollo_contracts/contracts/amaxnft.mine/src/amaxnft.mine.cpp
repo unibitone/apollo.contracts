@@ -84,8 +84,7 @@ using namespace wasm::safemath;
       CHECKC( end_at > begin_at, err::PARAM_ERROR, "begin time should be less than end time");
       CHECKC( end_at - begin_at <= 5 * YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 5 * 365 days");
       CHECKC( end_at > current_time_point().sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
-      
-      CHECKC( nftids.size() + campaign.pledge_ntokens.size() <= _gstate.nft_size_limit, err::PARAM_ERROR, "nft size should be less than or equal to " + to_string(_gstate.nft_size_limit));
+      CHECKC( nftids.size() <= _gstate.nft_size_limit, err::PARAM_ERROR, "nft size should be less than or equal to " + to_string(_gstate.nft_size_limit));
       CHECKC( plan_day >= _gstate.plan_size_limit, err::PARAM_ERROR, "plan day should be more than or equal to "+to_string(_gstate.plan_size_limit));
 
       CHECKC( plan_interest.symbol.is_valid(), err::PARAM_ERROR, "invalid plan_interest symbol" )
