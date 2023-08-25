@@ -85,7 +85,7 @@ using namespace wasm::safemath;
       CHECKC( end_at - begin_at <= 5 * YEAR_SECONDS, err::PARAM_ERROR, "the duration of the campaign cannot exceed 5 * 365 days");
       CHECKC( end_at > current_time_point().sec_since_epoch(), err::PARAM_ERROR, "begin time should be less than end time");
       
-      CHECKC( nftids.size() + campaign.pledge_ntokens.size() <= _gstate.nft_size_limit, err::PARAM_ERROR, "nft size should be less than or equal to " + to_string(_gstate.nft_size_limit));
+      CHECKC( nftids.size() <= _gstate.nft_size_limit, err::PARAM_ERROR, "nft size should be less than or equal to " + to_string(_gstate.nft_size_limit));
       CHECKC( plan_day >= _gstate.plan_size_limit, err::PARAM_ERROR, "plan day should be more than or equal to "+to_string(_gstate.plan_size_limit));
 
       CHECKC( plan_interest.symbol.is_valid(), err::PARAM_ERROR, "invalid plan_interest symbol" )
@@ -286,6 +286,7 @@ using namespace wasm::safemath;
   * @param quantity
   * @param memo: one formats:
   *       1) pledge : $campaign_id    -- gain interest by pledge ntoken 
+  *       2) pledge : $campaign_id : $user_account    -- gain interest by pledge ntoken to user_account
   */  
   void amaxnft_mine::_on_ntoken_transfer( const name& from,
                                               const name& to,
@@ -296,7 +297,7 @@ using namespace wasm::safemath;
 
       auto parts = split( memo, ":" );
       
-      if (parts.size() == 2 && parts[0] == "pledge") {
+      if ((parts.size() == 2 || parts.size() == 3) && parts[0] == "pledge") {
           nasset quantity = assets[0];
           auto now = time_point_sec(current_time_point());
           extended_nasset extended_quantity = extended_nasset(quantity, get_first_receiver());
@@ -318,7 +319,18 @@ using namespace wasm::safemath;
           save_acct.interest_collected          = asset(0, campaign.plan_interest.symbol);
           save_acct.term_ended_at               = now + campaign.plan_day * DAY_SECONDS;
           save_acct.created_at                  = now;
-          _db.set( from.value, save_acct, false );
+          // pledge to user
+          if (parts.size() == 3) {
+            auto user_acct = name(parts[2]);
+            CHECKC( is_account( user_acct ), err::ACCOUNT_INVALID, "memo invalid account: " + user_acct.to_string() )
+            if (user_acct.to_string() != "") {
+                _db.set( user_acct.value, save_acct, false );
+            } else {
+                CHECKC( false, err::PARAM_ERROR, "memo error account is empty" );
+            }
+          } else {
+            _db.set( from.value, save_acct, false );
+          }
           
           campaign.quotas_purchased += quantity.amount;
           campaign.pledge_ntokens[extended_quantity.get_extended_nsymbol()].allocated_quotas += quantity.amount;
