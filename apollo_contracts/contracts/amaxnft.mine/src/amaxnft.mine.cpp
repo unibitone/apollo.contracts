@@ -94,8 +94,8 @@ using namespace wasm::safemath;
       CHECKC( _gstate.nft_contracts.count(ntoken_contract), err::PARAM_ERROR, "ntoken contract invalid" )
       CHECKC( campaign_name_cn.size() <= 64 && campaign_name_cn.size() > 0, err::MEMO_FORMAT_ERROR, "campaign_name_cn length is not more than 64 bytes and not empty");
       CHECKC( campaign_name_en.size() <= 64, err::MEMO_FORMAT_ERROR, "campaign_name_en length is not more than 64 bytes");
-      CHECKC( campaign_pic_url_cn.size() <= 64 && campaign_pic_url_cn.size() > 0, err::MEMO_FORMAT_ERROR, "campaign_pic_url chinese length is not more than 64 bytes and not empty");
-      CHECKC( campaign_pic_url_en.size() <= 64, err::MEMO_FORMAT_ERROR, "campaign_pic_url english length is not more than 64 bytes");
+      CHECKC( campaign_pic_url_cn.size() <= 128 && campaign_pic_url_cn.size() > 0, err::MEMO_FORMAT_ERROR, "campaign_pic_url chinese length is not more than 128 bytes and not empty");
+      CHECKC( campaign_pic_url_en.size() <= 128, err::MEMO_FORMAT_ERROR, "campaign_pic_url english length is not more than 128 bytes");
 
       _set_campaign(campaign, nftids, ntoken_contract, plan_day, plan_interest, total_quotas, campaign_name_cn, campaign_name_en, campaign_pic_url_cn, campaign_pic_url_en);
 
