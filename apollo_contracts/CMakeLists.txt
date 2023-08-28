@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(nftone_contracts)
+project(apollo_contracts)
 
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 1)
@@ -17,7 +17,7 @@ include(ExternalProject)
 
 find_package(amax.cdt)
 
-message(STATUS "Building nftone.contracts v${VERSION_FULL}")
+message(STATUS "Building apollo.contracts v${VERSION_FULL}")
 
 set(AMAX_CDT_VERSION_MIN "1.7.0")
 set(AMAX_CDT_VERSION_SOFT_MAX "1.7.99")

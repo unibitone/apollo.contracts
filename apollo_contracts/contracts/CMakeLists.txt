@@ -14,13 +14,8 @@ set(ADMIN_ICON_URI    "admin.png#9bf1cec664863bd6aaac0f814b235f8799fb02c850e9aa5
 set(TRANSFER_ICON_URI "transfer.png#5dfad0df72772ee1ccc155e670c1d124f5c5122f1d5027565df38b418042d1dd")
 set(VOTING_ICON_URI   "voting.png#db28cd3db6e62d4509af3644ce7d377329482a14bb4bfaca2aa5f1400d8e8a84")
 
-<<<<<<< HEAD
-add_subdirectory(amax.save)
-# add_subdirectory(nftone.save)
-=======
 # add_subdirectory(amax.save)
 add_subdirectory(nftone.save)
->>>>>>> 03e359f4f2d251e4908238675d28e5d9c4424dbe
 # add_subdirectory(amax.share)
 add_subdirectory(amax.savetwo)
 add_subdirectory(amaxnft.mine)
