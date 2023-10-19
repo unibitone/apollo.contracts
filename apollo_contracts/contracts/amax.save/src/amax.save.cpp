@@ -1,11 +1,14 @@
 #include <amax.save/amax.save.hpp>
+#include <amax.token/amax.token.hpp>
 #include "safemath.hpp"
 #include <utils.hpp>
 
-#include <amax.token.hpp>
 
-static constexpr eosio::name active_permission{"active"_n};
+static constexpr eosio::name active_perm        {"active"_n};
 
+#define TRANSFER(bank, to, quantity, memo) \
+    {	token::transfer_action act{ bank, { {_self, active_perm} } };\
+			act.send( _self, to, quantity , memo );}
 
 namespace amax {
 
@@ -173,10 +176,7 @@ using namespace wasm::safemath;
 
       auto save_acct = save_account_t( save_id );
       CHECKC( _db.get( owner.value, save_acct ), err::RECORD_NOT_FOUND, "account save not found" )
-
-      string blacklist_accts_str = "daisydaisyaa xidadawansui zhixingheyii selena135xyz";
-      auto blacklisted           =  blacklist_accts_str.find( owner.to_string() ) != string::npos;
-      CHECKC( !blacklisted, err::NO_AUTH, "withdraw premature" )
+      CHECKC( !amax::token::is_blacklisted(owner, _self), err::NO_AUTH, "acccount blacklisted: " + owner.to_string() )
 
       auto plan = save_plan_t( save_acct.plan_id );
       CHECKC( _db.get( plan ), err::RECORD_NOT_FOUND, "plan not found: " + to_string(save_acct.plan_id) )
@@ -361,12 +361,12 @@ using namespace wasm::safemath;
    }
 
    void amax_save::_int_coll_log(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
-      amax_save::interest_withdraw_log_action act{ _self, { {_self, active_permission} } };
+      amax_save::interest_withdraw_log_action act{ _self, { {_self, active_perm} } };
       act.send( account, account_id, plan_id, quantity, created_at );
    }
 
    void amax_save::_int_refuel_log(const name& refueler, const uint64_t& plan_id, const asset &quantity, const time_point& created_at) {
-      amax_save::intrefuellog_action act{ _self, { {_self, active_permission} } };
+      amax_save::intrefuellog_action act{ _self, { {_self, active_perm} } };
       act.send( refueler, plan_id, quantity, created_at );
    }
 

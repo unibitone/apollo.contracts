@@ -86,6 +86,7 @@ class [[eosio::contract("amax.save")]] amax_save : public contract {
    ACTION intcolllog(const name& account, const uint64_t& account_id, const uint64_t& plan_id, const asset &quantity, const time_point& created_at);
    using interest_withdraw_log_action = eosio::action_wrapper<"intcolllog"_n, &amax_save::intcolllog>; 
 
+
    private:
       global_singleton     _global;
       global_t             _gstate;
