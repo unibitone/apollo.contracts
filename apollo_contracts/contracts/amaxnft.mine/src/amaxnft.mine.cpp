@@ -167,29 +167,6 @@ using namespace wasm::safemath;
       NTOKEN_TRANSFER( pledged_quant.contract, owner, redeem_quant, "redeem: " + to_string(save_id) )
   }
 
-  // only contract owner change nft user account
-  void amaxnft_mine::changeacct(const name& owner, const name& new_owner, const uint64_t& save_id) {
-      require_auth( _self );
-
-      CHECKC( is_account(new_owner), err::ACCOUNT_INVALID, "new owner account not found: " + new_owner.to_string() )
-      CHECKC( owner.value != new_owner.value, err::PARAM_ERROR, "owner account is same" )
-
-      auto save_acct = save_account_t( save_id );
-      CHECKC( _db.get( owner.value, save_acct ), err::RECORD_NOT_FOUND, "account save not found" )
-
-      save_account_t new_save_acct(save_id);
-      new_save_acct.campaign_id                 = save_acct.campaign_id;
-      new_save_acct.pledged                     = save_acct.pledged;
-      new_save_acct.save_pre_interest           = save_acct.save_pre_interest;
-      new_save_acct.interest_collected          = save_acct.interest_collected;
-      new_save_acct.term_ended_at               = save_acct.term_ended_at;
-      new_save_acct.last_collected_at           = save_acct.last_collected_at;
-      new_save_acct.created_at                  = save_acct.created_at;
-
-      _db.set( new_owner.value, new_save_acct, false);
-      _db.del( owner.value, save_acct );
-  }
-
   // campaign creator cancel campaign
   void amaxnft_mine::cancelcamp(const name& issuer, const name& owner, const uint64_t& campaign_id) {
       require_auth( issuer );

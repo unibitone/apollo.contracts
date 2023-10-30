@@ -91,15 +91,6 @@ class [[eosio::contract("amaxnft.mine")]] amaxnft_mine : public contract {
    ACTION redeem(const name& issuer, const name& owner, const uint64_t& save_id);
 
    /**
-    * @brief only contract owner can change nft user account
-    *
-    * @param owner     users participating in the campaign.
-    * @param new_owner new users participating in the campaign.
-    * @param save_id   save account id.
-    */
-   ACTION changeacct(const name& owner, const name& new_owner, const uint64_t& save_id);
-
-   /**
     * @brief sponsor cancel campaign
     *
     * @param issuer  users participating in the campaign.
