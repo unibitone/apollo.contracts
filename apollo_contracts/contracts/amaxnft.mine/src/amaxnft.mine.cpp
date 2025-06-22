@@ -273,7 +273,7 @@ using namespace wasm::safemath;
           uint64_t campaign_id = to_uint64(parts[1], "campaign_id parse int error");
           save_campaign_t campaign(campaign_id);
           CHECKC( _db.get( campaign ), err::RECORD_NOT_FOUND, "campaign not found: " + to_string( campaign_id ) )
-          CHECKC( campaign.sponsor == from, err::NO_AUTH, "permission denied" )
+          CHECKC( campaign.sponsor == from || _is_whitelist(from), err::NO_AUTH, "permission denied" )
 
           // check quotas gt zero
           CHECKC(campaign.quotas_purchased > 0, err::OVERSIZED, "purchase quotas must be greater than 0" )
